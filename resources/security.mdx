@@ -1,0 +1,129 @@
+---
+title: "Security Best Practices"
+description: "Secure your trading applications and protect your funds"
+icon: "shield"
+---
+
+## Key Management
+
+### Never Expose Private Keys
+
+<Warning>
+  Never commit private keys or mnemonics to version control, logs, or
+  client-side code.
+</Warning>
+
+**Bad**:
+
+```typescript
+const mnemonic = "my twelve word mnemonic..."; // ❌ Hardcoded
+```
+
+**Good**:
+
+```typescript
+const mnemonic = process.env.MNEMONIC; // ✅ Environment variable
+```
+
+### Use Environment Variables
+
+```bash .env
+MNEMONIC=your twelve word mnemonic here
+PRIVATE_KEY=0x...
+MAIN_WALLET_ADDRESS=lfg1...
+```
+
+```typescript
+import "dotenv/config";
+
+const wallet = await LocalWallet.fromMnemonic(process.env.MNEMONIC!, "lfg");
+```
+
+### Separate API Keys
+
+Create different API keys for different purposes:
+
+- **Trading**: Limited to order placement
+- **Withdrawals**: Separate key for withdrawals
+- **Read-only**: For monitoring only
+
+## Operational Security
+
+### Validate Inputs
+
+```typescript
+function validateOrderSize(size: number, maxSize: number): void {
+  if (size <= 0) throw new Error("Size must be positive");
+  if (size > maxSize) throw new Error("Size exceeds maximum");
+}
+```
+
+### Implement Rate Limiting
+
+```typescript
+class RateLimiter {
+  private requests: number[] = [];
+
+  async checkLimit(maxRequests: number, windowMs: number): Promise<void> {
+    const now = Date.now();
+    this.requests = this.requests.filter((t) => t > now - windowMs);
+
+    if (this.requests.length >= maxRequests) {
+      throw new Error("Rate limit exceeded");
+    }
+
+    this.requests.push(now);
+  }
+}
+```
+
+### Monitor Margin Health
+
+```typescript
+async function checkMarginHealth(client: CompositeClient, address: string) {
+  const account = await client.indexerClient.account.getParentSubaccount(
+    address,
+    0
+  );
+  const equity = parseFloat(account.subaccount.equity);
+  const freeCollateral = parseFloat(account.subaccount.freeCollateral);
+  const marginRatio = (freeCollateral / equity) * 100;
+
+  if (marginRatio < 10) {
+    // Alert: High liquidation risk
+    console.error("⚠️ HIGH LIQUIDATION RISK");
+  }
+}
+```
+
+## Network Security
+
+### Use HTTPS Endpoints
+
+Always use HTTPS for API endpoints:
+
+```typescript
+const indexerConfig = new IndexerConfig(
+  "https://indexer.lfg.land/v4", // ✅ HTTPS
+  "wss://indexer.lfg.land/v4/ws" // ✅ WSS
+);
+```
+
+### Verify TLS Certificates
+
+Ensure your environment verifies TLS certificates (enabled by default in Node.js).
+
+## Related
+
+<CardGroup cols={2}>
+  <Card
+    title="Error Handling"
+    icon="triangle-exclamation"
+    href="/resources/errors"
+  >
+    Handle errors gracefully
+  </Card>
+  <Card title="Wallets Guide" icon="wallet" href="/guides/wallets-subaccounts">
+    Secure wallet management
+  </Card>
+</CardGroup>

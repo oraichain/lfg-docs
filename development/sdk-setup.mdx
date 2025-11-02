@@ -1,0 +1,163 @@
+---
+title: "SDK Setup"
+description: "Install and configure the LFG Perp TypeScript SDK"
+icon: "download"
+---
+
+## Prerequisites
+
+Before installing the SDK, ensure your development environment meets these requirements:
+
+<CardGroup cols={2}>
+  <Card title="Node.js" icon="node">
+    Version 18.0.0 or higher
+  </Card>
+  <Card title="TypeScript" icon="code">
+    Version 5.0.0 or higher (recommended)
+  </Card>
+</CardGroup>
+
+<Tip>
+  We recommend using Node.js 18 LTS or later for the best compatibility and
+  performance.
+</Tip>
+
+## Package Manager Installation
+
+Install the SDK using your preferred package manager:
+
+<Tabs>
+  <Tab title="npm">```bash npm install @oraichain/lfg-client-js ```</Tab>
+
+{" "}
+<Tab title="yarn">```bash yarn add @oraichain/lfg-client-js ```</Tab>
+
+{" "}
+<Tab title="pnpm">```bash pnpm add @oraichain/lfg-client-js ```</Tab>
+
+  <Tab title="bun">```bash bun add @oraichain/lfg-client-js ```</Tab>
+</Tabs>
+
+## Verify Installation
+
+Create a test file to verify the installation:
+
+```typescript test.ts
+import { Network, CompositeClient } from "@oraichain/lfg-client-js";
+
+async function testInstallation() {
+  try {
+    const network = Network.staging();
+    const client = await CompositeClient.connect(network);
+    console.log("✅ SDK installed successfully!");
+    console.log("Connected to:", network.chainId);
+  } catch (error) {
+    console.error("❌ Installation test failed:", error);
+  }
+}
+
+testInstallation();
+```
+
+Run the test:
+
+```bash
+npx tsx test.ts
+```
+
+<Check>
+  If you see "SDK installed successfully!", the installation is complete and
+  working correctly.
+</Check>
+
+## TypeScript Configuration
+
+For optimal TypeScript support, add these settings to your `tsconfig.json`:
+
+```json tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+```
+
+## Dependencies
+
+The SDK automatically installs these peer dependencies:
+
+| Package                 | Purpose                |
+| ----------------------- | ---------------------- |
+| `@cosmjs/proto-signing` | Transaction signing    |
+| `@cosmjs/stargate`      | Cosmos SDK integration |
+| `bignumber.js`          | Precise decimal math   |
+| `long`                  | 64-bit integer support |
+
+<Note>
+  You don't need to manually install these dependencies - they're included
+  automatically.
+</Note>
+
+## Optional Tools
+
+Consider installing these tools to enhance your development experience:
+
+<AccordionGroup>
+  <Accordion title="tsx - TypeScript Execution" icon="play">
+    Execute TypeScript files directly without compilation:
+    
+    ```bash
+    npm install -D tsx
+    ```
+    
+    Usage:
+    ```bash
+    npx tsx your-script.ts
+    ```
+  </Accordion>
+
+{" "}
+<Accordion title="dotenv - Environment Variables" icon="key">
+  Manage API keys and secrets securely: ```bash npm install dotenv ``` Usage:
+  ```typescript import 'dotenv/config'; const privateKey =
+  process.env.PRIVATE_KEY; ```
+</Accordion>
+
+  <Accordion title="@types/node - Node.js Type Definitions" icon="code">
+    Type definitions for Node.js APIs:
+    
+    ```bash
+    npm install -D @types/node
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Now that the SDK is installed, you're ready to start building:
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/development/quickstart">
+    Build your first trading application
+  </Card>
+  <Card title="Configuration" icon="gear" href="/development/configuration">
+    Learn about network and client configuration
+  </Card>
+  <Card title="Wallet Setup" icon="wallet" href="/guides/wallets-subaccounts">
+    Set up wallets and subaccounts
+  </Card>
+  <Card title="Place Your First Order" icon="chart-line" href="/guides/orders">
+    Learn how to place and manage orders
+  </Card>
+</CardGroup>

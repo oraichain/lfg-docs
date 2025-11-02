@@ -1,0 +1,196 @@
+---
+title: "Network"
+description: "Network configuration class for connecting to LFG DEX"
+icon: "network-wired"
+---
+
+## Overview
+
+The `Network` class represents a blockchain network configuration including Indexer and Validator endpoints, chain ID, and denomination settings.
+
+```typescript
+import { Network } from "@oraichain/lfg-client-js";
+```
+
+## Static Methods
+
+### Network.staging()
+
+Returns a pre-configured Network instance for the staging/testnet environment.
+
+```typescript
+const network = Network.staging();
+
+console.log(network.chainId); // "lfg-staging-1"
+console.log(network.indexerConfig); // IndexerConfig instance
+console.log(network.validatorConfig); // ValidatorConfig instance
+```
+
+**Returns**: `Network` - Staging network configuration
+
+<Tip>Use `Network.staging()` for development and testing with test tokens.</Tip>
+
+### Network.mainnet()
+
+Returns a pre-configured Network instance for the production mainnet environment.
+
+```typescript
+const network = Network.mainnet();
+
+console.log(network.chainId); // "lfg-mainnet-1"
+```
+
+**Returns**: `Network` - Mainnet network configuration
+
+<Warning>
+  Mainnet uses real assets. Always test thoroughly on staging first.
+</Warning>
+
+## Constructor
+
+Create a custom Network instance with your own configuration.
+
+```typescript
+const network = new Network(chainId, indexerConfig, validatorConfig);
+```
+
+### Parameters
+
+<ParamField path="chainId" type="string" required>
+  The blockchain chain identifier (e.g., `"lfg-mainnet-1"`, `"lfg-staging-1"`)
+</ParamField>
+
+<ParamField path="indexerConfig" type="IndexerConfig" required>
+  Configuration for the Indexer client endpoints
+</ParamField>
+
+<ParamField path="validatorConfig" type="ValidatorConfig" required>
+  Configuration for the Validator client endpoints
+</ParamField>
+
+### Example
+
+```typescript
+import {
+  Network,
+  IndexerConfig,
+  ValidatorConfig,
+} from "@oraichain/lfg-client-js";
+
+const indexerConfig = new IndexerConfig(
+  "https://indexer.example.com/v4",
+  "wss://indexer.example.com/v4/ws"
+);
+
+const validatorConfig = new ValidatorConfig(
+  "https://rpc.example.com",
+  "lfg-custom-1",
+  {
+    CHAINTOKEN_DENOM: "uorai",
+    USDC_DENOM: "ibc/...",
+    USDC_GAS_DENOM: "uusdc",
+    USDC_DECIMALS: 6,
+    CHAINTOKEN_DECIMALS: 6,
+  }
+);
+
+const customNetwork = new Network(
+  "lfg-custom-1",
+  indexerConfig,
+  validatorConfig
+);
+```
+
+## Properties
+
+### chainId
+
+The blockchain chain identifier.
+
+```typescript
+const chainId: string = network.chainId;
+```
+
+### indexerConfig
+
+The IndexerConfig instance for this network.
+
+```typescript
+const indexerConfig: IndexerConfig = network.indexerConfig;
+console.log(indexerConfig.restEndpoint);
+console.log(indexerConfig.websocketEndpoint);
+```
+
+### validatorConfig
+
+The ValidatorConfig instance for this network.
+
+```typescript
+const validatorConfig: ValidatorConfig = network.validatorConfig;
+console.log(validatorConfig.restEndpoint);
+console.log(validatorConfig.chainId);
+```
+
+## Usage Examples
+
+### Connect to Staging
+
+```typescript
+import { Network, CompositeClient } from "@oraichain/lfg-client-js";
+
+const network = Network.staging();
+const client = await CompositeClient.connect(network);
+```
+
+### Connect to Mainnet
+
+```typescript
+const network = Network.mainnet();
+const client = await CompositeClient.connect(network);
+```
+
+### Environment-Based Configuration
+
+```typescript
+function getNetworkForEnvironment(env: string): Network {
+  switch (env) {
+    case "production":
+      return Network.mainnet();
+    case "staging":
+    default:
+      return Network.staging();
+  }
+}
+
+const network = getNetworkForEnvironment(process.env.NODE_ENV || "staging");
+const client = await CompositeClient.connect(network);
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card
+    title="IndexerConfig"
+    icon="database"
+    href="/sdk-reference/indexer-client"
+  >
+    Indexer endpoint configuration
+  </Card>
+  <Card
+    title="ValidatorConfig"
+    icon="server"
+    href="/sdk-reference/validator-client"
+  >
+    Validator endpoint configuration
+  </Card>
+  <Card
+    title="CompositeClient"
+    icon="layer-group"
+    href="/sdk-reference/composite-client"
+  >
+    Main client using Network configuration
+  </Card>
+  <Card title="Configuration Guide" icon="gear" href="/configuration">
+    Detailed configuration guide
+  </Card>
+</CardGroup>

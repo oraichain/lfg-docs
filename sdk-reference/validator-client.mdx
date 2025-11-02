@@ -1,0 +1,121 @@
+---
+title: "ValidatorClient"
+description: "Submit transactions and query blockchain state"
+icon: "server"
+---
+
+## Overview
+
+The `ValidatorClient` handles transaction submission and blockchain queries through the Cosmos SDK RPC interface.
+
+Access via CompositeClient:
+
+```typescript
+const blockHeight = await client.validatorClient.get.latestBlockHeight();
+const balances = await client.validatorClient.get.getAccountBalances(address);
+```
+
+## GET Methods
+
+### latestBlockHeight()
+
+Get the current blockchain height.
+
+```typescript
+const currentBlock = await client.validatorClient.get.latestBlockHeight();
+console.log("Current block:", currentBlock);
+```
+
+**Returns**: `Promise<number>`
+
+### getAccountBalances()
+
+Get wallet balances (source account, not subaccount).
+
+```typescript
+const balances = await client.validatorClient.get.getAccountBalances(
+  wallet.address
+);
+
+balances.forEach((balance) => {
+  console.log(`${balance.denom}: ${balance.amount}`);
+});
+```
+
+<ParamField path="address" type="string" required>
+  Wallet address
+</ParamField>
+
+**Returns**: `Promise<Coin[]>`
+
+## POST Methods
+
+### sendToken()
+
+Send tokens from source wallet.
+
+```typescript
+const tx = await client.validatorClient.post.sendToken(
+  subaccount,
+  recipientAddress,
+  denom,
+  amount
+);
+```
+
+<ParamField path="subaccount" type="SubaccountInfo" required>
+  Sender subaccount
+</ParamField>
+
+<ParamField path="recipient" type="string" required>
+  Recipient address
+</ParamField>
+
+<ParamField path="denom" type="string" required>
+  Token denomination
+</ParamField>
+
+<ParamField path="amount" type="string" required>
+  Amount to send
+</ParamField>
+
+**Returns**: `Promise<BroadcastTxResponse>`
+
+## Cache Methods
+
+### populateAccountNumberCache()
+
+Pre-populate account number cache for faster transactions.
+
+```typescript
+await client.validatorClient.populateAccountNumberCache(wallet.address);
+```
+
+<ParamField path="address" type="string" required>
+  Address to cache
+</ParamField>
+
+**Returns**: `Promise<void>`
+
+<Tip>
+  Call this before submitting multiple transactions to improve performance.
+</Tip>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card
+    title="CompositeClient"
+    icon="layer-group"
+    href="/sdk-reference/composite-client"
+  >
+    Main client interface
+  </Card>
+  <Card
+    title="Transfers Guide"
+    icon="arrow-right-arrow-left"
+    href="/guides/transfers"
+  >
+    Fund management operations
+  </Card>
+</CardGroup>

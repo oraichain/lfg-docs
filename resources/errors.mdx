@@ -1,0 +1,119 @@
+---
+title: "Error Handling"
+description: "Common errors and how to handle them"
+icon: "triangle-exclamation"
+---
+
+## Common Errors
+
+### Insufficient Funds
+
+**Error**: `"insufficient funds"`
+
+**Cause**: Not enough USDC in wallet or subaccount
+
+**Solution**:
+
+```typescript
+// Check balance before operations
+const balances = await client.validatorClient.get.getAccountBalances(address);
+const usdcBalance = balances.find((b) => b.denom.includes("usdc"));
+```
+
+### Insufficient Collateral
+
+**Error**: `"insufficient collateral"`
+
+**Cause**: Not enough free collateral to place order
+
+**Solution**:
+
+```typescript
+const account = await client.indexerClient.account.getParentSubaccount(
+  address,
+  0
+);
+const freeCollateral = parseFloat(account.subaccount.freeCollateral);
+
+if (freeCollateral < orderCost) {
+  // Deposit more or reduce order size
+}
+```
+
+### Order Expired
+
+**Error**: Order expired or `goodTilBlock` in the past
+
+**Cause**: Block height has passed `goodTilBlock`
+
+**Solution**:
+
+```typescript
+const currentBlock = await client.validatorClient.get.latestBlockHeight();
+const goodTilBlock = currentBlock + 20; // Add buffer
+```
+
+### Network Errors
+
+**Error**: `"network request failed"`, `"timeout"`
+
+**Cause**: Network connectivity issues
+
+**Solution**:
+
+```typescript
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+```
+
+## Error Handling Patterns
+
+### Try-Catch Wrapper
+
+```typescript
+async function safeOperation() {
+  try {
+    const tx = await client.placeShortTermOrder(/* ... */);
+    return { success: true, txHash: tx.hash };
+  } catch (error: any) {
+    console.error("Operation failed:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+```
+
+### Specific Error Handling
+
+```typescript
+try {
+  await client.depositToSubaccount(subaccount, amount);
+} catch (error: any) {
+  if (error.message?.includes("insufficient funds")) {
+    console.error("Not enough USDC in wallet");
+  } else if (error.message?.includes("gas")) {
+    console.error("Insufficient gas");
+  } else {
+    console.error("Unknown error:", error);
+  }
+}
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Security" icon="shield" href="/resources/security">
+    Security best practices
+  </Card>
+  <Card title="FAQ" icon="circle-question" href="/resources/faq">
+    Frequently asked questions
+  </Card>
+</CardGroup>

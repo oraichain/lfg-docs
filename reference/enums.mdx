@@ -1,0 +1,100 @@
+---
+title: "Enums"
+description: "Enumeration types in the LFG SDK"
+icon: "list"
+---
+
+## OrderSide
+
+Order direction.
+
+```typescript
+enum OrderSide {
+  BUY = "BUY",
+  SELL = "SELL",
+}
+```
+
+## OrderType
+
+Type of order.
+
+```typescript
+enum OrderType {
+  LIMIT = "LIMIT",
+  MARKET = "MARKET",
+  STOP_LIMIT = "STOP_LIMIT",
+  STOP_MARKET = "STOP_MARKET",
+}
+```
+
+## OrderStatus
+
+Order status.
+
+```typescript
+enum OrderStatus {
+  OPEN = "OPEN",
+  FILLED = "FILLED",
+  CANCELED = "CANCELED",
+  BEST_EFFORT_CANCELED = "BEST_EFFORT_CANCELED",
+  UNTRIGGERED = "UNTRIGGERED",
+}
+```
+
+## OrderTimeInForce
+
+Time in force policy.
+
+```typescript
+enum OrderTimeInForce {
+  GTT = "GTT", // Good-til-time
+  IOC = "IOC", // Immediate-or-cancel
+  FOK = "FOK", // Fill-or-kill
+}
+```
+
+## OrderExecution
+
+Execution type.
+
+```typescript
+enum OrderExecution {
+  DEFAULT = "DEFAULT",
+  POST_ONLY = "POST_ONLY",
+  IOC = "IOC",
+}
+```
+
+## OrderFlags
+
+Order type flags.
+
+```typescript
+enum OrderFlags {
+  SHORT_TERM = 0,
+  LONG_TERM = 64,
+}
+```
+
+## SelectedGasDenom
+
+Gas denomination selection.
+
+```typescript
+enum SelectedGasDenom {
+  USDC = "USDC",
+  NATIVE = "NATIVE",
+}
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Types Reference" icon="code" href="/reference/types">
+    Type definitions
+  </Card>
+  <Card title="Orders Guide" icon="chart-line" href="/guides/orders">
+    Order placement guide
+  </Card>
+</CardGroup>

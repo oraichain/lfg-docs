@@ -1,0 +1,80 @@
+---
+title: "Market Info"
+description: "Market data structures and information"
+icon: "store"
+---
+
+## MarketData
+
+Complete market information returned by the Indexer.
+
+```typescript
+interface MarketData {
+  clobPairId: string;
+  ticker: string;
+  status: string;
+  oraclePrice: string;
+  priceChange24H: string;
+  volume24H: string;
+  trades24H: number;
+  nextFundingRate: string;
+  initialMarginFraction: string;
+  maintenanceMarginFraction: string;
+  openInterest: string;
+  atomicResolution: number;
+  quantumConversionExponent: number;
+  tickSize: string;
+  stepSize: string;
+}
+```
+
+## Key Fields
+
+### ticker
+
+Market identifier (e.g., "ETH-USD", "BTC-USD")
+
+### oraclePrice
+
+Current market price from the oracle
+
+### initialMarginFraction
+
+Initial margin requirement. Example: `"0.05"` = 5% = 20x max leverage
+
+### maintenanceMarginFraction
+
+Maintenance margin requirement. Example: `"0.03"` = 3%
+
+### nextFundingRate
+
+Next funding rate as a decimal. Example: `"0.0001"` = 0.01%
+
+## Usage Example
+
+```typescript
+const markets = await client.indexerClient.markets.getPerpetualMarkets();
+const ethMarket = markets.markets["ETH-USD"];
+
+console.log(`ETH-USD:`);
+console.log(`  Price: $${ethMarket.oraclePrice}`);
+console.log(`  24h Change: ${ethMarket.priceChange24H}%`);
+console.log(`  Volume: $${ethMarket.volume24H}`);
+console.log(`  Open Interest: $${ethMarket.openInterest}`);
+console.log(`  Funding Rate: ${ethMarket.nextFundingRate}%`);
+
+// Calculate max leverage
+const maxLeverage = 1 / parseFloat(ethMarket.initialMarginFraction);
+console.log(`  Max Leverage: ${maxLeverage}x`);
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Markets Guide" icon="chart-mixed" href="/guides/markets">
+    Query market data
+  </Card>
+  <Card title="Types Reference" icon="code" href="/reference/types">
+    All SDK types
+  </Card>
+</CardGroup>

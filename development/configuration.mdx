@@ -1,0 +1,147 @@
+---
+title: "Configuration"
+description: "Configure network settings, RPC endpoints, and client options"
+icon: "gear"
+---
+
+## Network Configuration
+
+The SDK provides pre-configured network settings for different environments. Understanding how to configure these properly is essential for connecting to the correct chain.
+
+### Built-in Networks
+
+The SDK includes two pre-configured networks:
+
+<Tabs>
+  <Tab title="Staging (Testnet)">
+    Use staging for development and testing:
+    
+    ```typescript
+    import { Network } from "@oraichain/lfg-client-js";
+
+    const network = Network.staging();
+
+    // Network properties
+    console.log(network.chainId);          // "lfg-staging-1"
+    console.log(network.indexerConfig);    // Indexer endpoints
+    console.log(network.validatorConfig);  // Validator endpoints
+    ```
+
+    <Tip>
+      Staging network uses test tokens with no real value. Perfect for development.
+    </Tip>
+
+  </Tab>
+
+  <Tab title="Mainnet (Production)">
+    Use mainnet for production applications:
+    
+    ```typescript
+    import { Network } from "@oraichain/lfg-client-js";
+
+    const network = Network.mainnet();
+
+    // Network properties
+    console.log(network.chainId);          // "lfg-mainnet-1"
+    console.log(network.indexerConfig);    // Indexer endpoints
+    console.log(network.validatorConfig);  // Validator endpoints
+    ```
+
+    <Warning>
+      Mainnet uses real assets. Always test thoroughly on staging first.
+    </Warning>
+
+  </Tab>
+</Tabs>
+
+## Custom Network Configuration
+
+For advanced use cases, you can create a custom network configuration with your own RPC endpoints.
+
+### IndexerConfig
+
+The Indexer provides read-only access to market data and account information:
+
+```typescript
+import { IndexerConfig } from "@oraichain/lfg-client-js";
+
+const indexerConfig = new IndexerConfig(
+  "https://indexer.lfg.land/v4", // REST endpoint
+  "wss://indexer.lfg.land/v4/ws" // WebSocket endpoint
+);
+```
+
+### ValidatorConfig
+
+The Validator handles transaction submission and blockchain queries:
+
+```typescript
+import { ValidatorConfig } from "@oraichain/lfg-client-js";
+
+const validatorConfig = new ValidatorConfig(
+  "https://rpc.lfg.land", // RPC endpoint
+  "lfg-mainnet-1", // Chain ID
+  {
+    CHAINTOKEN_DENOM: "uorai", // Native token denom
+    USDC_DENOM: "ibc/...", // USDC denom
+    USDC_GAS_DENOM: "uusdc", // Gas denom
+    USDC_DECIMALS: 6, // USDC decimals
+    CHAINTOKEN_DECIMALS: 6, // Chain token decimals
+  },
+  undefined, // Optional: custom denominations
+  "My Trading Bot v1.0" // User agent
+);
+```
+
+## Chain Configuration Reference
+
+### Staging Network
+
+| Property          | Value                                  |
+| ----------------- | -------------------------------------- |
+| Chain ID          | `lfg-staging-1`                        |
+| Address Prefix    | `lfg`                                  |
+| Indexer REST      | `https://indexer-staging.lfg.land/v4`  |
+| Indexer WebSocket | `wss://indexer-staging.lfg.land/v4/ws` |
+| RPC Endpoint      | `https://rpc-staging.lfg.land`         |
+| USDC Decimals     | 6                                      |
+
+### Mainnet Network
+
+| Property          | Value                          |
+| ----------------- | ------------------------------ |
+| Chain ID          | `lfg-mainnet-1`                |
+| Address Prefix    | `lfg`                          |
+| Indexer REST      | `https://indexer.lfg.land/v4`  |
+| Indexer WebSocket | `wss://indexer.lfg.land/v4/ws` |
+| RPC Endpoint      | `https://rpc.lfg.land`         |
+| USDC Decimals     | 6                              |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Wallets & Subaccounts"
+    icon="wallet"
+    href="/guides/wallets-subaccounts"
+  >
+    Learn how to manage wallets and subaccounts
+  </Card>
+  <Card title="Place Orders" icon="chart-line" href="/guides/orders">
+    Start trading with the SDK
+  </Card>
+  <Card
+    title="CompositeClient Reference"
+    icon="book"
+    href="/sdk-reference/composite-client"
+  >
+    Explore the full CompositeClient API
+  </Card>
+  <Card
+    title="Network Reference"
+    icon="network-wired"
+    href="/sdk-reference/network"
+  >
+    Detailed Network class documentation
+  </Card>
+</CardGroup>

@@ -1,0 +1,663 @@
+---
+title: "Orders & Trading"
+description: "Place, manage, and cancel orders on the LFG Perpetual DEX"
+icon: "chart-line"
+---
+
+## Overview
+
+The LFG SDK supports various order types for trading perpetual contracts. This guide covers everything from placing basic market orders to managing complex trading strategies.
+
+<CardGroup cols={2}>
+  <Card title="Short-Term Orders" icon="clock">
+    Fast orders that expire in blocks (~seconds to minutes)
+  </Card>
+  <Card title="Long-Term Orders" icon="calendar">
+    Traditional limit orders with time-based expiration (hours to days)
+  </Card>
+</CardGroup>
+
+## Order Types
+
+### Short-Term Orders
+
+Short-term orders are ideal for:
+
+- Market-making strategies
+- High-frequency trading
+- Quick in-and-out trades
+- Time-sensitive opportunities
+
+**Characteristics:**
+
+- Expire based on block height
+- Lower gas costs
+- Faster execution
+- Typical lifespan: seconds to minutes
+
+### Long-Term Orders
+
+Long-term orders are ideal for:
+
+- Position building
+- Swing trading
+- Limit orders that can wait
+- Strategy orders
+
+**Characteristics:**
+
+- Expire based on timestamp
+- Standard gas costs
+- Can stay on orderbook for days
+- Typical lifespan: hours to 28 days
+
+## Placing Short-Term Orders
+
+### Basic Short-Term Order
+
+```typescript
+import {
+  CompositeClient,
+  LocalWallet,
+  SubaccountInfo,
+  OrderSide,
+  Order_TimeInForce,
+} from "@oraichain/lfg-client-js";
+
+async function placeShortTermOrder(
+  client: CompositeClient,
+  wallet: LocalWallet
+) {
+  // Get current block height
+  const currentBlock = await client.validatorClient.get.latestBlockHeight();
+
+  // Order expires in 20 blocks (~2 minutes)
+  const goodTilBlock = currentBlock + 20;
+
+  // Generate unique client ID
+  const clientId = Math.floor(Math.random() * 100000000);
+
+  // Create subaccount
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+
+  // Place BUY order
+  const tx = await client.placeShortTermOrder(
+    subaccount, // Trading account
+    "ETH-USD", // Market
+    OrderSide.BUY, // Side
+    3800, // Price ($3800/ETH)
+    0.1, // Size (0.1 ETH)
+    clientId, // Unique order ID
+    goodTilBlock, // Expiration block
+    Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED, // Time in force
+    false // Not reduce-only
+  );
+
+  console.log("✅ Order placed!");
+  console.log("TX Hash:", Buffer.from(tx.hash).toString("hex"));
+  console.log("Client ID:", clientId);
+
+  return { txHash: Buffer.from(tx.hash).toString("hex"), clientId };
+}
+```
+
+<ParamField path="subaccount" type="SubaccountInfo" required>
+  The subaccount placing the order
+</ParamField>
+
+<ParamField path="marketId" type="string" required>
+  Market identifier (e.g., `"ETH-USD"`, `"BTC-USD"`)
+</ParamField>
+
+<ParamField path="side" type="OrderSide" required>
+  `OrderSide.BUY` or `OrderSide.SELL`
+</ParamField>
+
+<ParamField path="price" type="number" required>
+  Limit price in quote currency (USD). Set to market price for market orders.
+</ParamField>
+
+<ParamField path="size" type="number" required>
+  Order size in base currency (e.g., ETH, BTC)
+</ParamField>
+
+<ParamField path="clientId" type="number" required>
+  Unique identifier for this order (0 to 2^32-1)
+</ParamField>
+
+<ParamField path="goodTilBlock" type="number" required>
+  Block height when order expires. Must be greater than current block.
+</ParamField>
+
+<ParamField path="timeInForce" type="Order_TimeInForce" required>
+  Order time in force policy. Use `TIME_IN_FORCE_UNSPECIFIED` for most cases.
+</ParamField>
+
+<ParamField path="reduceOnly" type="boolean" required>
+  If `true`, order can only reduce position size (not increase it)
+</ParamField>
+
+### Sell Order Example
+
+```typescript
+// Place SELL order to close or short
+const tx = await client.placeShortTermOrder(
+  subaccount,
+  "ETH-USD",
+  OrderSide.SELL, // Selling ETH
+  3900, // Sell at $3900
+  0.1, // Sell 0.1 ETH
+  clientId,
+  goodTilBlock,
+  Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED,
+  false
+);
+```
+
+### Market Order (Short-Term)
+
+```typescript
+// Get current market price first
+const markets = await client.indexerClient.markets.getPerpetualMarkets();
+const ethMarket = markets.markets["ETH-USD"];
+const marketPrice = parseFloat(ethMarket.oraclePrice);
+
+// Place order at market price
+const tx = await client.placeShortTermOrder(
+  subaccount,
+  "ETH-USD",
+  OrderSide.BUY,
+  marketPrice, // Use current market price
+  0.1,
+  clientId,
+  goodTilBlock,
+  Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED,
+  false
+);
+```
+
+<Tip>
+  For true market orders, query the current market price and place a short-term
+  order at that price with a short expiration.
+</Tip>
+
+## Placing Long-Term Orders
+
+### Basic Long-Term Order
+
+```typescript
+import {
+  OrderType,
+  OrderTimeInForce,
+  OrderExecution,
+} from "@oraichain/lfg-client-js";
+
+async function placeLongTermOrder(
+  client: CompositeClient,
+  wallet: LocalWallet
+) {
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+
+  // Generate unique client ID
+  const clientId = Math.floor(Math.random() * 100000000);
+
+  // Order valid for 24 hours
+  const goodTilTimeInSeconds = 24 * 60 * 60;
+
+  // Place limit order
+  const tx = await client.placeOrder(
+    subaccount,
+    "ETH-USD", // Market
+    OrderType.LIMIT, // Order type
+    OrderSide.BUY, // Side
+    3800, // Price
+    0.1, // Size
+    clientId, // Client ID
+    OrderTimeInForce.GTT, // Good-til-time
+    goodTilTimeInSeconds, // Expires in 24 hours
+    OrderExecution.DEFAULT, // Execution type
+    false, // Post-only (false)
+    false // Reduce-only (false)
+  );
+
+  console.log("✅ Long-term order placed!");
+  console.log("TX Hash:", Buffer.from(tx.hash).toString("hex"));
+  console.log("Client ID:", clientId);
+  console.log("Expires in:", goodTilTimeInSeconds, "seconds");
+
+  return { txHash: Buffer.from(tx.hash).toString("hex"), clientId };
+}
+```
+
+<ParamField path="orderType" type="OrderType" required>
+  `OrderType.LIMIT`, `OrderType.MARKET`, `OrderType.STOP_LIMIT`, or
+  `OrderType.STOP_MARKET`
+</ParamField>
+
+<ParamField path="timeInForce" type="OrderTimeInForce" required>
+  - `OrderTimeInForce.GTT` - Good-til-time (most common) -
+  `OrderTimeInForce.IOC` - Immediate or cancel - `OrderTimeInForce.FOK` - Fill
+  or kill
+</ParamField>
+
+<ParamField path="goodTilTimeInSeconds" type="number" required>
+  Seconds from now until order expires (max 28 days)
+</ParamField>
+
+<ParamField path="execution" type="OrderExecution" required>
+  `OrderExecution.DEFAULT`, `OrderExecution.POST_ONLY`, or `OrderExecution.IOC`
+</ParamField>
+
+<ParamField path="postOnly" type="boolean" required>
+  If `true`, order will only execute as maker (adds liquidity)
+</ParamField>
+
+<ParamField path="reduceOnly" type="boolean" required>
+  If `true`, order can only reduce existing position
+</ParamField>
+
+### Post-Only Orders
+
+Post-only orders ensure you're always a maker:
+
+```typescript
+const tx = await client.placeOrder(
+  subaccount,
+  "BTC-USD",
+  OrderType.LIMIT,
+  OrderSide.BUY,
+  65000, // Price
+  0.01, // Size
+  clientId,
+  OrderTimeInForce.GTT,
+  7 * 24 * 60 * 60, // 7 days
+  OrderExecution.POST_ONLY, // Post-only execution
+  true, // Post-only flag
+  false
+);
+```
+
+<Note>
+  Post-only orders are rejected if they would immediately match and execute as a
+  taker. This guarantees maker rebates.
+</Note>
+
+### Reduce-Only Orders
+
+Reduce-only orders can only close existing positions:
+
+```typescript
+// Close half of your long position
+const tx = await client.placeShortTermOrder(
+  subaccount,
+  "ETH-USD",
+  OrderSide.SELL, // Sell to reduce long position
+  3900,
+  0.05, // Reduce by 0.05 ETH
+  clientId,
+  goodTilBlock,
+  Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED,
+  true // Reduce-only = true
+);
+```
+
+<Warning>
+  Reduce-only orders will be rejected if you don't have an open position in that
+  market.
+</Warning>
+
+## Canceling Orders
+
+### Cancel Short-Term Order
+
+```typescript
+import { OrderFlags } from "@oraichain/lfg-client-js";
+
+async function cancelShortTermOrder(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  clientId: number,
+  originalGoodTilBlock: number
+) {
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+
+  // Cancel with new goodTilBlock
+  const tx = await client.cancelOrder(
+    subaccount,
+    clientId, // Original client ID
+    OrderFlags.SHORT_TERM, // Order flag
+    "ETH-USD", // Market
+    originalGoodTilBlock + 10, // New expiration
+    0 // goodTilTimeInSeconds (0 for short-term)
+  );
+
+  console.log("✅ Order cancelled!");
+  console.log("TX Hash:", Buffer.from(tx.hash).toString("hex"));
+}
+```
+
+### Cancel Long-Term Order
+
+```typescript
+async function cancelLongTermOrder(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  clientId: number,
+  originalGoodTilBlockTime: number
+) {
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+
+  const currentTime = Math.floor(Date.now() / 1000);
+  const timeUntilExpiration = originalGoodTilBlockTime - currentTime;
+
+  const tx = await client.cancelOrder(
+    subaccount,
+    clientId,
+    OrderFlags.LONG_TERM, // Order flag
+    "ETH-USD",
+    0, // goodTilBlock (0 for long-term)
+    timeUntilExpiration + 60 // Add 60 seconds buffer
+  );
+
+  console.log("✅ Order cancelled!");
+  console.log("TX Hash:", Buffer.from(tx.hash).toString("hex"));
+}
+```
+
+<Tip>
+  To cancel an order, you need the original `clientId` and order flags. Store
+  these when placing orders.
+</Tip>
+
+## Querying Orders
+
+### Get All Orders for Subaccount
+
+```typescript
+async function getUserOrders(
+  client: CompositeClient,
+  address: string,
+  parentSubaccountNumber: number = 0
+) {
+  const orders = await client.indexerClient.account.get(
+    "/v4/orders/parentSubaccountNumber",
+    {
+      address,
+      parentSubaccountNumber,
+      returnLatestOrders: true,
+    }
+  );
+
+  for (const order of orders) {
+    console.log(`Order ${order.id}:`);
+    console.log(`  Market: ${order.ticker}`);
+    console.log(`  Side: ${order.side}`);
+    console.log(`  Price: $${order.price}`);
+    console.log(`  Size: ${order.size}`);
+    console.log(`  Filled: ${order.totalFilled}`);
+    console.log(`  Status: ${order.status}`);
+  }
+
+  return orders;
+}
+```
+
+### Filter Orders by Market
+
+```typescript
+const ethOrders = await client.indexerClient.account.get(
+  "/v4/orders/parentSubaccountNumber",
+  {
+    address: wallet.address,
+    parentSubaccountNumber: 0,
+    ticker: "ETH-USD", // Filter by market
+    returnLatestOrders: true,
+  }
+);
+```
+
+### Filter Orders by Status
+
+```typescript
+import { OrderStatus } from "@oraichain/lfg-client-js";
+
+// Get only open orders
+const openOrders = await client.indexerClient.account.get(
+  "/v4/orders/parentSubaccountNumber",
+  {
+    address: wallet.address,
+    parentSubaccountNumber: 0,
+    status: OrderStatus.OPEN, // Filter by status
+    returnLatestOrders: true,
+  }
+);
+```
+
+### Get Order by ID
+
+```typescript
+async function getOrderById(client: CompositeClient, orderId: string) {
+  const order = await client.indexerClient.account.getOrder(orderId);
+
+  console.log("Order Details:");
+  console.log(`  ID: ${order.id}`);
+  console.log(`  Client ID: ${order.clientId}`);
+  console.log(`  Market: ${order.ticker}`);
+  console.log(`  Side: ${order.side}`);
+  console.log(`  Type: ${order.type}`);
+  console.log(`  Price: $${order.price}`);
+  console.log(`  Size: ${order.size}`);
+  console.log(`  Filled: ${order.totalFilled}`);
+  console.log(`  Status: ${order.status}`);
+  console.log(`  Created: ${order.createdAt}`);
+
+  return order;
+}
+```
+
+## Advanced Trading Strategies
+
+### Grid Trading Bot
+
+```typescript
+async function setupGridOrders(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  market: string,
+  basePrice: number,
+  gridLevels: number,
+  gridSpacing: number,
+  orderSize: number
+) {
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+  const currentBlock = await client.validatorClient.get.latestBlockHeight();
+  const goodTilBlock = currentBlock + 100;
+
+  const orders = [];
+
+  // Place buy orders below base price
+  for (let i = 1; i <= gridLevels; i++) {
+    const price = basePrice * (1 - gridSpacing * i);
+    const clientId = Math.floor(Math.random() * 100000000);
+
+    const tx = await client.placeShortTermOrder(
+      subaccount,
+      market,
+      OrderSide.BUY,
+      price,
+      orderSize,
+      clientId,
+      goodTilBlock,
+      Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED,
+      false
+    );
+
+    orders.push({ side: "BUY", price, clientId, txHash: tx.hash });
+  }
+
+  // Place sell orders above base price
+  for (let i = 1; i <= gridLevels; i++) {
+    const price = basePrice * (1 + gridSpacing * i);
+    const clientId = Math.floor(Math.random() * 100000000);
+
+    const tx = await client.placeShortTermOrder(
+      subaccount,
+      market,
+      OrderSide.SELL,
+      price,
+      orderSize,
+      clientId,
+      goodTilBlock,
+      Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED,
+      false
+    );
+
+    orders.push({ side: "SELL", price, clientId, txHash: tx.hash });
+  }
+
+  console.log(`✅ Placed ${orders.length} grid orders`);
+  return orders;
+}
+
+// Usage
+await setupGridOrders(
+  client,
+  wallet,
+  "ETH-USD",
+  3800, // Base price
+  5, // 5 levels on each side
+  0.01, // 1% spacing
+  0.01 // 0.01 ETH per order
+);
+```
+
+### Stop-Loss Order
+
+```typescript
+async function placeStopLossOrder(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  market: string,
+  stopPrice: number,
+  size: number
+) {
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+  const clientId = Math.floor(Math.random() * 100000000);
+
+  const tx = await client.placeOrder(
+    subaccount,
+    market,
+    OrderType.STOP_MARKET, // Stop order
+    OrderSide.SELL, // Sell to close long
+    stopPrice, // Trigger price
+    size,
+    clientId,
+    OrderTimeInForce.GTT,
+    7 * 24 * 60 * 60, // Valid for 7 days
+    OrderExecution.DEFAULT,
+    false,
+    true, // Reduce-only
+    stopPrice // triggerPrice parameter
+  );
+
+  console.log("✅ Stop-loss order placed at $" + stopPrice);
+  return tx;
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Generate Unique Client IDs" icon="fingerprint">
+    Always use unique client IDs for each order:
+    
+    ```typescript
+    const clientId = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+    ```
+    
+    Or use a counter with your bot instance:
+    ```typescript
+    let orderCounter = 0;
+    const clientId = orderCounter++;
+    ```
+  </Accordion>
+
+  <Accordion title="Handle Order Expiration" icon="clock">
+    Short-term orders expire quickly. Always check if enough blocks remain:
+    
+    ```typescript
+    const currentBlock = await client.validatorClient.get.latestBlockHeight();
+    const minBlocksNeeded = 10;
+    
+    if (goodTilBlock < currentBlock + minBlocksNeeded) {
+      // Order would expire too soon, refresh goodTilBlock
+      goodTilBlock = currentBlock + 20;
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Store Order Metadata" icon="database">
+    Keep track of your orders for cancellation and monitoring:
+    
+    ```typescript
+    interface OrderMetadata {
+      clientId: number;
+      orderId?: string;
+      market: string;
+      side: OrderSide;
+      price: number;
+      size: number;
+      goodTilBlock?: number;
+      goodTilBlockTime?: number;
+      orderFlags: OrderFlags;
+      createdAt: Date;
+    }
+    
+    const orderHistory: OrderMetadata[] = [];
+    ```
+  </Accordion>
+
+  <Accordion title="Implement Order Retry Logic" icon="rotate">
+    Network issues can cause order placement to fail:
+    
+    ```typescript
+    async function placeOrderWithRetry(
+      maxRetries: number = 3
+    ): Promise<any> {
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          return await client.placeShortTermOrder(/* ... */);
+        } catch (error) {
+          if (i === maxRetries - 1) throw error;
+          await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        }
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Manage Balances" icon="scale-balanced" href="/guides/balances">
+    Query positions and account balances
+  </Card>
+  <Card
+    title="Transfers"
+    icon="arrow-right-arrow-left"
+    href="/guides/transfers"
+  >
+    Deposit and withdraw funds
+  </Card>
+  <Card title="Market Data" icon="chart-mixed" href="/guides/markets">
+    Query orderbooks and market statistics
+  </Card>
+  <Card
+    title="Order Types Reference"
+    icon="book"
+    href="/sdk-reference/order-types"
+  >
+    Complete order types documentation
+  </Card>
+</CardGroup>

@@ -1,0 +1,203 @@
+---
+title: "FAQ"
+description: "Frequently asked questions about the LFG SDK"
+icon: "circle-question"
+---
+
+## General Questions
+
+<AccordionGroup>
+  <Accordion title="What is the LFG SDK?" icon="code">
+    The `@oraichain/lfg-client-js` SDK is the official TypeScript/JavaScript client for interacting with the Oraichain LFG Perpetual DEX. It provides complete access to trading, market data, and account management.
+  </Accordion>
+
+{" "}
+<Accordion title="Which networks are supported?" icon="network-wired">
+  The SDK supports: - **Staging/Testnet**: For development and testing with test
+  tokens - **Mainnet**: For production trading with real assets Access via
+  `Network.staging()` and `Network.mainnet()`.
+</Accordion>
+
+  <Accordion title="What are the system requirements?" icon="computer">
+    - Node.js 18+ or modern browser
+    - TypeScript 5+ (recommended)
+    - Internet connection for API access
+  </Accordion>
+</AccordionGroup>
+
+## Trading Questions
+
+<AccordionGroup>
+  <Accordion title="How do I place an order?" icon="chart-line">
+    Use `client.placeShortTermOrder()` for quick orders or `client.placeOrder()` for long-term orders:
+    
+    ```typescript
+    const tx = await client.placeShortTermOrder(
+      subaccount,
+      "ETH-USD",
+      OrderSide.BUY,
+      3800,
+      0.1,
+      clientId,
+      goodTilBlock,
+      Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED,
+      false
+    );
+    ```
+    
+    See the [Orders Guide](/guides/orders) for details.
+  </Accordion>
+
+{" "}
+<Accordion
+  title="What's the difference between short-term and long-term orders?"
+  icon="clock"
+>
+  - **Short-term orders**: Expire based on block height, lower gas, faster
+  execution - **Long-term orders**: Expire based on timestamp, can stay on
+  orderbook for days Use short-term for HFT/market-making, long-term for
+  position building.
+</Accordion>
+
+  <Accordion title="How do I cancel an order?" icon="xmark">
+    Use `client.cancelOrder()` with the original client ID:
+    
+    ```typescript
+    await client.cancelOrder(
+      subaccount,
+      clientId,
+      OrderFlags.SHORT_TERM,
+      "ETH-USD",
+      goodTilBlock,
+      0
+    );
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Account Questions
+
+<AccordionGroup>
+  <Accordion title="What are subaccounts?" icon="layer-group">
+    Subaccounts are isolated trading accounts under your wallet. Each has:
+    - Separate collateral balance
+    - Independent positions and orders
+    - Risk isolation from other subaccounts
+    
+    You can have up to 128 subaccounts (0-127).
+  </Accordion>
+
+{" "}
+<Accordion title="How do I deposit funds?" icon="arrow-down">
+  Use `client.depositToSubaccount()`: ```typescript await
+  client.depositToSubaccount( subaccount, "1000" // $1000 USDC ); ``` See the
+  [Transfers Guide](/guides/transfers) for details.
+</Accordion>
+
+  <Accordion title="How do I check my balance?" icon="wallet">
+    Query the Indexer:
+    
+    ```typescript
+    const account = await client.indexerClient.account.getParentSubaccount(
+      wallet.address,
+      0
+    );
+    console.log("Equity:", account.subaccount.equity);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Technical Questions
+
+<AccordionGroup>
+  <Accordion title="How do I handle network errors?" icon="wifi">
+    Implement retry logic:
+    
+    ```typescript
+    async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          return await fn();
+        } catch (error) {
+          if (i === maxRetries - 1) throw error;
+          await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        }
+      }
+      throw new Error("Max retries exceeded");
+    }
+    ```
+  </Accordion>
+
+{" "}
+<Accordion title="Can I use this in the browser?" icon="browser">
+  Yes! The SDK works in modern browsers. However, never expose private keys in
+  client-side code. Consider using a backend API for sensitive operations.
+</Accordion>
+
+  <Accordion title="How do I use API keys for trading?" icon="key">
+    Create an API key wallet and use `SubaccountInfo.forPermissionedWallet()`:
+    
+    ```typescript
+    const apiKeyWallet = await LocalWallet.fromPrivateKey(apiKey, "lfg");
+    const subaccount = SubaccountInfo.forPermissionedWallet(
+      apiKeyWallet,
+      mainWalletAddress,
+      0,
+      [authenticatorId]
+    );
+    ```
+    
+    See the [Wallets Guide](/guides/wallets-subaccounts#api-key-trading-example) for details.
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="My order isn't filling" icon="clock">
+    Common reasons:
+    - Price too far from market (limit order)
+    - Insufficient liquidity
+    - Order expired
+    
+    Check market price and orderbook depth before placing orders.
+  </Accordion>
+
+{" "}
+<Accordion title="Insufficient collateral error" icon="triangle-exclamation">
+  You need more free collateral. Either: - Deposit more USDC - Close some
+  positions - Reduce order size Check: `account.subaccount.freeCollateral`
+</Accordion>
+
+  <Accordion title="Transaction failed" icon="xmark">
+    Common causes:
+    - Insufficient gas
+    - Expired block height
+    - Network connectivity
+    - Invalid parameters
+    
+    Check error message and see [Error Handling](/resources/errors).
+  </Accordion>
+</AccordionGroup>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card
+    title="Error Handling"
+    icon="triangle-exclamation"
+    href="/resources/errors"
+  >
+    Common errors and solutions
+  </Card>
+  <Card title="Security" icon="shield" href="/resources/security">
+    Security best practices
+  </Card>
+  <Card
+    title="Discord Community"
+    icon="discord"
+    href="https://discord.gg/oraichain"
+  >
+    Get help from the community
+  </Card>
+</CardGroup>

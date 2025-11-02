@@ -1,0 +1,15 @@
+# Mintlify MDX files
+*.mdx
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Logs
+*.log
+
+# Dependencies
+node_modules/
+

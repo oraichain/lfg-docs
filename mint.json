@@ -1,0 +1,100 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "LFG Perp Documentation",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#6C5CE7",
+    "light": "#A29BFE",
+    "dark": "#5F3DC4"
+  },
+  "theme": "quill",
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/oraichain/lfg-client-js"
+    },
+    {
+      "name": "Community",
+      "icon": "discord",
+      "url": "https://discord.gg/oraichain"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Introduction",
+      "pages": [
+        "introduction/welcome",
+        "introduction/what-is-lfg-perp",
+        "introduction/features",
+        "introduction/architecture"
+      ]
+    },
+    {
+      "group": "Development",
+      "pages": [
+        "development/overview",
+        "development/sdk-setup",
+        "development/quickstart",
+        "development/configuration"
+      ]
+    },
+    {
+      "group": "Trading Guides",
+      "pages": [
+        "guides/wallets-subaccounts",
+        "guides/api-key-trading",
+        "guides/orders",
+        "guides/balances",
+        "guides/transfers",
+        "guides/markets"
+      ]
+    },
+    {
+      "group": "SDK Reference",
+      "pages": [
+        "sdk-reference/network",
+        "sdk-reference/composite-client",
+        "sdk-reference/indexer-client",
+        "sdk-reference/validator-client",
+        "sdk-reference/local-wallet",
+        "sdk-reference/subaccount-info",
+        "sdk-reference/order-types",
+        "sdk-reference/market-info"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": ["reference/types", "reference/enums"]
+    },
+    {
+      "group": "Resources",
+      "pages": [
+        "resources/errors",
+        "resources/security",
+        "resources/faq",
+        "resources/changelog"
+      ]
+    }
+  ],
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/oraichain/lfg-client-js"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Launch App",
+    "url": "https://lfg.land"
+  },
+  "footerSocials": {
+    "x": "https://x.com/oraichain",
+    "github": "https://github.com/oraichain",
+    "discord": "https://discord.gg/oraichain",
+    "website": "https://orai.io"
+  }
+}

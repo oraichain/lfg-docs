@@ -1,0 +1,475 @@
+---
+title: "Wallets & Subaccounts"
+description: "Manage wallets and subaccounts for trading on the LFG DEX"
+icon: "wallet"
+---
+
+## Overview
+
+The LFG SDK uses a **wallet and subaccount system** to manage trading accounts. Understanding this architecture is crucial for building trading applications.
+
+<CardGroup cols={2}>
+  <Card title="Wallet" icon="key">
+    Your main account identified by an address (e.g., `lfg1abc...`). Controls
+    access and signs transactions.
+  </Card>
+  <Card title="Subaccount" icon="layer-group">
+    Trading accounts under a wallet. Each subaccount has isolated collateral and
+    positions.
+  </Card>
+</CardGroup>
+
+## Wallet Management
+
+### LocalWallet Class
+
+`LocalWallet` handles cryptographic key management and transaction signing:
+
+```typescript
+import { LocalWallet } from "@oraichain/lfg-client-js";
+```
+
+### Creating a Wallet from Mnemonic
+
+The recommended approach for production applications:
+
+```typescript
+const wallet = await LocalWallet.fromMnemonic(
+  "your twelve word mnemonic phrase goes here",
+  "lfg" // Address prefix
+);
+
+console.log("Address:", wallet.address);
+console.log("Public Key:", wallet.pubKey?.value);
+```
+
+<ParamField path="mnemonic" type="string" required>
+  A 12 or 24-word BIP39 mnemonic phrase
+</ParamField>
+
+<ParamField path="prefix" type="string" required>
+  Address prefix. Use `"lfg"` for LFG DEX networks
+</ParamField>
+
+<Tip>
+  Store mnemonics securely in environment variables or secret management
+  systems. Never hardcode them in your source code.
+</Tip>
+
+### Creating a Wallet from Private Key
+
+Useful for API keys and programmatic access:
+
+```typescript
+const wallet = await LocalWallet.fromPrivateKey(
+  "0xYourPrivateKeyHexString",
+  "lfg"
+);
+
+console.log("Address:", wallet.address);
+```
+
+<ParamField path="privateKey" type="string" required>
+  Private key as hex string (with or without `0x` prefix)
+</ParamField>
+
+<ParamField path="prefix" type="string" required>
+  Address prefix (`"lfg"` for LFG DEX)
+</ParamField>
+
+<Warning>
+  Private keys grant full control over the account. Protect them with the same
+  security as mnemonics.
+</Warning>
+
+### Generating a New Wallet
+
+Generate a new random wallet:
+
+```typescript
+// Note: The SDK doesn't expose a generate method directly
+// You'll typically use external libraries for key generation
+import { generateMnemonic } from "bip39";
+
+const mnemonic = generateMnemonic();
+const wallet = await LocalWallet.fromMnemonic(mnemonic, "lfg");
+
+console.log("🔐 Save this mnemonic securely:");
+console.log(mnemonic);
+console.log("\nNew address:", wallet.address);
+```
+
+<Note>You'll need to install `bip39` separately: `npm install bip39`</Note>
+
+## Subaccount System
+
+### What are Subaccounts?
+
+Subaccounts allow you to:
+
+- **Isolate risk** by separating different trading strategies
+- **Manage multiple positions** independently
+- **Organize trading activities** across different markets
+
+Each subaccount has:
+
+- Unique subaccount number (0-127)
+- Isolated collateral balance
+- Independent positions and orders
+
+### SubaccountInfo Class
+
+`SubaccountInfo` represents a trading subaccount:
+
+```typescript
+import { SubaccountInfo } from "@oraichain/lfg-client-js";
+```
+
+### Creating a Subaccount for Local Wallet
+
+For standard wallet-based trading:
+
+```typescript
+import { LocalWallet, SubaccountInfo } from "@oraichain/lfg-client-js";
+
+const wallet = await LocalWallet.fromMnemonic(mnemonic, "lfg");
+
+// Create subaccount 0 (default)
+const subaccount0 = SubaccountInfo.forLocalWallet(wallet, 0);
+
+// Create additional subaccounts
+const subaccount1 = SubaccountInfo.forLocalWallet(wallet, 1);
+const subaccount2 = SubaccountInfo.forLocalWallet(wallet, 2);
+
+console.log("Subaccount 0:", subaccount0.address, subaccount0.subaccountNumber);
+console.log("Subaccount 1:", subaccount1.address, subaccount1.subaccountNumber);
+```
+
+<ParamField path="wallet" type="LocalWallet" required>
+  The LocalWallet instance that controls this subaccount
+</ParamField>
+
+<ParamField path="subaccountNumber" type="number" required>
+  Subaccount index (0-127). Use 0 for your primary trading account.
+</ParamField>
+
+### Creating a Subaccount with API Key (Permissioned)
+
+For API key-based trading where an API key controls operations on behalf of a main wallet:
+
+```typescript
+import { LocalWallet, SubaccountInfo } from "@oraichain/lfg-client-js";
+
+// API key wallet (signs transactions)
+const apiKeyWallet = await LocalWallet.fromPrivateKey(
+  process.env.API_KEY_PRIVATE_KEY!,
+  "lfg"
+);
+
+// Main wallet address (owns the funds)
+const mainWalletAddress = "lfg1mainwalletaddress...";
+
+// Authenticator IDs that grant API key permission
+const authenticatorIds = [1]; // From getAuthenticators()
+
+// Create permissioned subaccount
+const subaccount = SubaccountInfo.forPermissionedWallet(
+  apiKeyWallet, // API key signs
+  mainWalletAddress, // Main wallet owns funds
+  0, // Subaccount number
+  authenticatorIds // Permission authenticators
+);
+```
+
+<ParamField path="wallet" type="LocalWallet" required>
+  The API key wallet that signs transactions
+</ParamField>
+
+<ParamField path="address" type="string" required>
+  The main wallet address that owns the subaccount
+</ParamField>
+
+<ParamField path="subaccountNumber" type="number" required>
+  Subaccount index (0-127)
+</ParamField>
+
+<ParamField path="authenticatorIds" type="number[]" required>
+  Array of authenticator IDs granting permission to the API key
+</ParamField>
+
+<Note>
+  See the [API Key Trading Example](#api-key-trading-example) below for complete
+  setup.
+</Note>
+
+## Querying Subaccount Information
+
+### Get Subaccount Balance
+
+```typescript
+const account = await client.indexerClient.account.getParentSubaccount(
+  wallet.address,
+  0 // parent subaccount number
+);
+
+// Access subaccount balances
+for (const subaccount of account.subaccount.childSubaccounts) {
+  console.log(`Subaccount ${subaccount.subaccountNumber}:`);
+  console.log(`  Total Equity: $${subaccount.equity}`);
+  console.log(`  Free Collateral: $${subaccount.freeCollateral}`);
+  console.log(`  Margin Usage: $${subaccount.marginUsage}`);
+}
+```
+
+### Get Subaccount Positions
+
+```typescript
+const account = await client.indexerClient.account.getParentSubaccount(
+  wallet.address,
+  0
+);
+
+for (const subaccount of account.subaccount.childSubaccounts) {
+  const positions = subaccount.openPerpetualPositions;
+
+  for (const [market, position] of Object.entries(positions)) {
+    console.log(`${market}:`);
+    console.log(`  Side: ${position.side}`);
+    console.log(`  Size: ${position.size}`);
+    console.log(`  Entry Price: $${position.entryPrice}`);
+    console.log(`  Unrealized PnL: $${position.unrealizedPnl}`);
+  }
+}
+```
+
+## API Key Trading Example
+
+Complete example of API key-based trading:
+
+```typescript
+import {
+  CompositeClient,
+  LocalWallet,
+  SubaccountInfo,
+  Network,
+  OrderSide,
+  Order_TimeInForce,
+} from "@oraichain/lfg-client-js";
+
+async function apiKeyTrading() {
+  // 1. Create API key wallet
+  const apiKeyWallet = await LocalWallet.fromPrivateKey(
+    process.env.API_KEY_PRIVATE_KEY!,
+    "lfg"
+  );
+
+  const mainWalletAddress = process.env.MAIN_WALLET_ADDRESS!;
+
+  // 2. Connect to network
+  const network = Network.staging();
+  const client = await CompositeClient.connect(network);
+
+  // 3. Get authenticators for main wallet
+  const auths = await client.getAuthenticators(mainWalletAddress);
+  const authenticatorId = auths.accountAuthenticators[0].id;
+
+  console.log(`Found authenticator ID: ${authenticatorId}`);
+
+  // 4. Create permissioned subaccount
+  const subaccount = SubaccountInfo.forPermissionedWallet(
+    apiKeyWallet,
+    mainWalletAddress,
+    0,
+    [authenticatorId]
+  );
+
+  // 5. Place order using API key
+  const currentBlock = await client.validatorClient.get.latestBlockHeight();
+  const goodTilBlock = currentBlock + 20;
+  const clientId = Math.floor(Math.random() * 100000000);
+
+  const tx = await client.placeShortTermOrder(
+    subaccount,
+    "ETH-USD",
+    OrderSide.BUY,
+    3800,
+    0.01,
+    clientId,
+    goodTilBlock,
+    Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED,
+    false
+  );
+
+  console.log("✅ Order placed via API key!");
+  console.log("TX Hash:", Buffer.from(tx.hash).toString("hex"));
+}
+```
+
+<Warning>
+  API keys must be registered with the main wallet's authenticators before they
+  can trade. This is typically done through the web interface.
+</Warning>
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Secure Key Storage" icon="lock">
+    **Never expose private keys or mnemonics in:**
+    - Source code
+    - Version control
+    - Log files
+    - Error messages
+    - Client-side code
+    
+    **Use instead:**
+    - Environment variables
+    - Secret management services (AWS Secrets Manager, HashiCorp Vault)
+    - Hardware security modules (HSM) for production
+  </Accordion>
+
+{" "}
+<Accordion title="Separate API Keys by Purpose" icon="key">
+  Create different API keys for different purposes: - **Trading Bot**: Limited
+  to order placement - **Withdrawal Key**: Separate key for withdrawals -
+  **Read-Only**: For monitoring and analytics This limits damage if a key is
+  compromised.
+</Accordion>
+
+{" "}
+<Accordion title="Use Subaccounts for Risk Isolation" icon="shield">
+  Separate trading strategies into different subaccounts: ```typescript const
+  conservativeBot = SubaccountInfo.forLocalWallet(wallet, 0); const
+  aggressiveBot = SubaccountInfo.forLocalWallet(wallet, 1); const hedging =
+  SubaccountInfo.forLocalWallet(wallet, 2); ``` If one strategy fails, others
+  remain unaffected.
+</Accordion>
+
+  <Accordion title="Implement Key Rotation" icon="rotate">
+    Regularly rotate API keys and update your applications:
+    
+    1. Generate new API key
+    2. Add to authenticators
+    3. Update application configuration
+    4. Remove old API key
+    5. Monitor for unauthorized access
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Usage
+
+### Multiple Subaccounts Example
+
+Organize trading strategies across subaccounts:
+
+```typescript
+// Define subaccount purposes
+enum SubaccountPurpose {
+  SPOT_HEDGING = 0,
+  MOMENTUM_TRADING = 1,
+  MARKET_MAKING = 2,
+  ARBITRAGE = 3,
+}
+
+class MultiSubaccountManager {
+  private wallet: LocalWallet;
+  private subaccounts: Map<SubaccountPurpose, SubaccountInfo>;
+
+  constructor(wallet: LocalWallet) {
+    this.wallet = wallet;
+    this.subaccounts = new Map();
+
+    // Initialize subaccounts
+    this.subaccounts.set(
+      SubaccountPurpose.SPOT_HEDGING,
+      SubaccountInfo.forLocalWallet(wallet, 0)
+    );
+    this.subaccounts.set(
+      SubaccountPurpose.MOMENTUM_TRADING,
+      SubaccountInfo.forLocalWallet(wallet, 1)
+    );
+    this.subaccounts.set(
+      SubaccountPurpose.MARKET_MAKING,
+      SubaccountInfo.forLocalWallet(wallet, 2)
+    );
+  }
+
+  getSubaccount(purpose: SubaccountPurpose): SubaccountInfo {
+    return this.subaccounts.get(purpose)!;
+  }
+
+  async getBalances(client: CompositeClient) {
+    const balances = new Map();
+
+    for (const [purpose, subaccount] of this.subaccounts) {
+      const account = await client.indexerClient.account.getParentSubaccount(
+        this.wallet.address,
+        subaccount.subaccountNumber
+      );
+      balances.set(purpose, account.subaccount);
+    }
+
+    return balances;
+  }
+}
+```
+
+## Common Patterns
+
+### Singleton Wallet Instance
+
+```typescript
+// wallet-manager.ts
+let walletInstance: LocalWallet | null = null;
+
+export async function getWallet(): Promise<LocalWallet> {
+  if (!walletInstance) {
+    walletInstance = await LocalWallet.fromMnemonic(
+      process.env.MNEMONIC!,
+      "lfg"
+    );
+  }
+  return walletInstance;
+}
+```
+
+### Wallet Factory
+
+```typescript
+// wallet-factory.ts
+export class WalletFactory {
+  static async createFromEnv(): Promise<LocalWallet> {
+    if (process.env.MNEMONIC) {
+      return await LocalWallet.fromMnemonic(process.env.MNEMONIC, "lfg");
+    } else if (process.env.PRIVATE_KEY) {
+      return await LocalWallet.fromPrivateKey(process.env.PRIVATE_KEY, "lfg");
+    } else {
+      throw new Error("No wallet credentials found in environment");
+    }
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Place Orders" icon="chart-line" href="/guides/orders">
+    Learn how to place and manage orders
+  </Card>
+  <Card title="Manage Balances" icon="scale-balanced" href="/guides/balances">
+    Query and monitor account balances
+  </Card>
+  <Card
+    title="Transfers"
+    icon="arrow-right-arrow-left"
+    href="/guides/transfers"
+  >
+    Deposit, withdraw, and transfer funds
+  </Card>
+  <Card
+    title="LocalWallet Reference"
+    icon="book"
+    href="/sdk-reference/local-wallet"
+  >
+    Complete LocalWallet API documentation
+  </Card>
+</CardGroup>

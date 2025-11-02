@@ -1,0 +1,137 @@
+---
+title: "Types"
+description: "TypeScript type definitions in the LFG SDK"
+icon: "code"
+---
+
+## Core Types
+
+### SubaccountInfo
+
+Represents a trading subaccount.
+
+```typescript
+interface SubaccountInfo {
+  address: string; // Wallet address
+  subaccountNumber: number; // Subaccount index (0-127)
+}
+```
+
+### MarketData
+
+Market information from the Indexer.
+
+```typescript
+interface MarketData {
+  clobPairId: string;
+  ticker: string;
+  status: string;
+  oraclePrice: string;
+  priceChange24H: string;
+  volume24H: string;
+  trades24H: number;
+  nextFundingRate: string;
+  initialMarginFraction: string;
+  maintenanceMarginFraction: string;
+  openInterest: string;
+}
+```
+
+### Orderbook Level
+
+Price level in an orderbook.
+
+```typescript
+interface OrderbookLevel {
+  price: string; // Price as string
+  size: string; // Size as string
+}
+```
+
+### Order
+
+Order information.
+
+```typescript
+interface Order {
+  id: string;
+  clientId: string;
+  ticker: string;
+  side: string; // "BUY" or "SELL"
+  size: string;
+  price: string;
+  type: string;
+  status: string;
+  timeInForce: string;
+  goodTilBlock?: number;
+  goodTilBlockTime?: string;
+}
+```
+
+### BroadcastTxResponse
+
+Transaction broadcast response.
+
+```typescript
+interface BroadcastTxResponse {
+  hash: Uint8Array; // Transaction hash
+  // ... additional fields
+}
+```
+
+## Network Types
+
+### IndexerConfig
+
+Indexer endpoint configuration.
+
+```typescript
+class IndexerConfig {
+  constructor(restEndpoint: string, websocketEndpoint: string);
+}
+```
+
+### ValidatorConfig
+
+Validator endpoint configuration.
+
+```typescript
+class ValidatorConfig {
+  constructor(
+    restEndpoint: string,
+    chainId: string,
+    denoms: DenomConfig,
+    broadcastOptions?: any,
+    userAgent?: string
+  );
+}
+```
+
+### DenomConfig
+
+Token denomination configuration.
+
+```typescript
+interface DenomConfig {
+  CHAINTOKEN_DENOM: string;
+  USDC_DENOM: string;
+  USDC_GAS_DENOM: string;
+  USDC_DECIMALS: number;
+  CHAINTOKEN_DECIMALS: number;
+}
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Enums Reference" icon="list" href="/reference/enums">
+    SDK enum definitions
+  </Card>
+  <Card
+    title="SDK Reference"
+    icon="book"
+    href="/sdk-reference/composite-client"
+  >
+    API documentation
+  </Card>
+</CardGroup>

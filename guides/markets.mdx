@@ -1,0 +1,678 @@
+---
+title: "Market Data"
+description: "Query markets, orderbooks, and trading data on the LFG DEX"
+icon: "chart-mixed"
+---
+
+## Overview
+
+Access comprehensive market data through the Indexer Client. This guide covers querying markets, orderbooks, funding rates, and trading statistics.
+
+<CardGroup cols={3}>
+  <Card title="Markets" icon="store">
+    List all perpetual markets and their properties
+  </Card>
+  <Card title="Orderbooks" icon="list">
+    View live bids and asks for any market
+  </Card>
+  <Card title="Statistics" icon="chart-line">
+    Access volume, price changes, and funding rates
+  </Card>
+</CardGroup>
+
+## Querying Markets
+
+### Get All Perpetual Markets
+
+```typescript
+import { CompositeClient } from "@oraichain/lfg-client-js";
+
+async function getAllMarkets(client: CompositeClient) {
+  const response = await client.indexerClient.markets.getPerpetualMarkets();
+
+  console.log("Available Markets:");
+
+  for (const [marketId, market] of Object.entries(response.markets)) {
+    console.log(`\n${market.ticker} (${marketId}):`);
+    console.log(`  Status: ${market.status}`);
+    console.log(`  Price: $${market.oraclePrice}`);
+    console.log(`  24h Change: ${market.priceChange24H}%`);
+    console.log(`  24h Volume: $${market.volume24H}`);
+    console.log(`  Open Interest: $${market.openInterest}`);
+    console.log(`  Next Funding Rate: ${market.nextFundingRate}%`);
+  }
+
+  return response.markets;
+}
+```
+
+### Market Data Structure
+
+<ResponseField name="clobPairId" type="string">
+  Unique identifier for the CLOB (Central Limit Order Book) pair
+</ResponseField>
+
+<ResponseField name="ticker" type="string">
+  Market ticker symbol (e.g., "ETH-USD", "BTC-USD")
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Market status: `"ACTIVE"`, `"PAUSED"`, `"CANCEL_ONLY"`, or `"POST_ONLY"`
+</ResponseField>
+
+<ResponseField name="oraclePrice" type="string">
+  Current oracle price in quote currency (USD)
+</ResponseField>
+
+<ResponseField name="priceChange24H" type="string">
+  24-hour price change percentage
+</ResponseField>
+
+<ResponseField name="volume24H" type="string">
+  24-hour trading volume in USD
+</ResponseField>
+
+<ResponseField name="trades24H" type="number">
+  Number of trades in the last 24 hours
+</ResponseField>
+
+<ResponseField name="nextFundingRate" type="string">
+  Next funding rate as a percentage
+</ResponseField>
+
+<ResponseField name="initialMarginFraction" type="string">
+  Initial margin requirement (e.g., "0.05" = 5% = 20x leverage)
+</ResponseField>
+
+<ResponseField name="maintenanceMarginFraction" type="string">
+  Maintenance margin requirement (e.g., "0.03" = 3%)
+</ResponseField>
+
+<ResponseField name="openInterest" type="string">
+  Total open interest in USD
+</ResponseField>
+
+### Get Specific Market
+
+```typescript
+async function getMarket(client: CompositeClient, marketId: string) {
+  const markets = await client.indexerClient.markets.getPerpetualMarkets();
+  const market = markets.markets[marketId];
+
+  if (!market) {
+    throw new Error(`Market ${marketId} not found`);
+  }
+
+  return market;
+}
+
+// Get ETH-USD market
+const ethMarket = await getMarket(client, "ETH-USD");
+console.log(`ETH Price: $${ethMarket.oraclePrice}`);
+```
+
+### Filter Active Markets
+
+```typescript
+function getActiveMarkets(markets: any) {
+  return Object.entries(markets)
+    .filter(([_, market]: [string, any]) => market.status === "ACTIVE")
+    .map(([marketId, market]) => ({ marketId, ...market }));
+}
+
+const markets = await client.indexerClient.markets.getPerpetualMarkets();
+const activeMarkets = getActiveMarkets(markets.markets);
+
+console.log(`Found ${activeMarkets.length} active markets`);
+```
+
+## Market Statistics
+
+### Get Market Rankings
+
+```typescript
+async function getMarketRankings(client: CompositeClient) {
+  const response = await client.indexerClient.markets.getPerpetualMarkets();
+  const markets = Object.entries(response.markets).map(
+    ([id, data]: [string, any]) => ({
+      marketId: id,
+      ticker: data.ticker,
+      volume24H: parseFloat(data.volume24H),
+      trades24H: data.trades24H,
+      priceChange24H: parseFloat(data.priceChange24H),
+      openInterest: parseFloat(data.openInterest),
+    })
+  );
+
+  // Sort by 24h volume
+  const byVolume = [...markets].sort((a, b) => b.volume24H - a.volume24H);
+
+  console.log("Top 10 Markets by Volume:");
+  byVolume.slice(0, 10).forEach((market, index) => {
+    console.log(
+      `${index + 1}. ${market.ticker}: $${market.volume24H.toFixed(0)}`
+    );
+  });
+
+  // Sort by price change
+  const byPriceChange = [...markets].sort(
+    (a, b) => b.priceChange24H - a.priceChange24H
+  );
+
+  console.log("\nTop Gainers:");
+  byPriceChange.slice(0, 5).forEach((market) => {
+    console.log(`${market.ticker}: +${market.priceChange24H.toFixed(2)}%`);
+  });
+
+  console.log("\nTop Losers:");
+  byPriceChange
+    .slice(-5)
+    .reverse()
+    .forEach((market) => {
+      console.log(`${market.ticker}: ${market.priceChange24H.toFixed(2)}%`);
+    });
+
+  return { byVolume, byPriceChange };
+}
+```
+
+### Calculate Maximum Leverage
+
+```typescript
+function calculateMaxLeverage(market: any): number {
+  const initialMarginFraction = parseFloat(market.initialMarginFraction);
+  return 1 / initialMarginFraction;
+}
+
+const markets = await client.indexerClient.markets.getPerpetualMarkets();
+const ethMarket = markets.markets["ETH-USD"];
+
+const maxLeverage = calculateMaxLeverage(ethMarket);
+console.log(`ETH-USD Max Leverage: ${maxLeverage}x`);
+```
+
+## Orderbook Data
+
+### Get Market Orderbook
+
+```typescript
+async function getOrderbook(client: CompositeClient, marketId: string) {
+  const orderbook =
+    await client.indexerClient.markets.getPerpetualMarketOrderbook(marketId);
+
+  console.log(`${marketId} Orderbook:`);
+
+  // Display top 10 asks (sell orders)
+  console.log("\nAsks (Sell Orders):");
+  orderbook.asks.slice(0, 10).forEach((ask: any) => {
+    console.log(
+      `  $${parseFloat(ask.price).toFixed(2)} - ${parseFloat(ask.size).toFixed(
+        4
+      )}`
+    );
+  });
+
+  // Display top 10 bids (buy orders)
+  console.log("\nBids (Buy Orders):");
+  orderbook.bids.slice(0, 10).forEach((bid: any) => {
+    console.log(
+      `  $${parseFloat(bid.price).toFixed(2)} - ${parseFloat(bid.size).toFixed(
+        4
+      )}`
+    );
+  });
+
+  return orderbook;
+}
+
+await getOrderbook(client, "ETH-USD");
+```
+
+### Orderbook Structure
+
+```typescript
+interface OrderbookLevel {
+  price: string; // Price level
+  size: string; // Total size at this price
+}
+
+interface Orderbook {
+  bids: OrderbookLevel[]; // Buy orders (descending by price)
+  asks: OrderbookLevel[]; // Sell orders (ascending by price)
+}
+```
+
+### Calculate Spread
+
+```typescript
+function calculateSpread(orderbook: any): number {
+  if (orderbook.bids.length === 0 || orderbook.asks.length === 0) {
+    return 0;
+  }
+
+  const bestBid = parseFloat(orderbook.bids[0].price);
+  const bestAsk = parseFloat(orderbook.asks[0].price);
+
+  const spread = bestAsk - bestBid;
+  const spreadPercent = (spread / bestBid) * 100;
+
+  console.log(`Best Bid: $${bestBid.toFixed(2)}`);
+  console.log(`Best Ask: $${bestAsk.toFixed(2)}`);
+  console.log(`Spread: $${spread.toFixed(2)} (${spreadPercent.toFixed(3)}%)`);
+
+  return spread;
+}
+
+const orderbook =
+  await client.indexerClient.markets.getPerpetualMarketOrderbook("ETH-USD");
+calculateSpread(orderbook);
+```
+
+### Calculate Market Depth
+
+```typescript
+function calculateMarketDepth(orderbook: any, depthPercent: number = 1): any {
+  const bestBid = parseFloat(orderbook.bids[0]?.price || 0);
+  const bestAsk = parseFloat(orderbook.asks[0]?.price || 0);
+
+  // Calculate depth for bids
+  let bidDepth = 0;
+  const bidPriceFloor = bestBid * (1 - depthPercent / 100);
+
+  for (const bid of orderbook.bids) {
+    const price = parseFloat(bid.price);
+    if (price < bidPriceFloor) break;
+    bidDepth += parseFloat(bid.size) * price;
+  }
+
+  // Calculate depth for asks
+  let askDepth = 0;
+  const askPriceCeil = bestAsk * (1 + depthPercent / 100);
+
+  for (const ask of orderbook.asks) {
+    const price = parseFloat(ask.price);
+    if (price > askPriceCeil) break;
+    askDepth += parseFloat(ask.size) * price;
+  }
+
+  console.log(`Market Depth (${depthPercent}%):`);
+  console.log(`  Bid Depth: $${bidDepth.toFixed(2)}`);
+  console.log(`  Ask Depth: $${askDepth.toFixed(2)}`);
+  console.log(`  Total Depth: $${(bidDepth + askDepth).toFixed(2)}`);
+
+  return { bidDepth, askDepth, totalDepth: bidDepth + askDepth };
+}
+
+const depth = calculateMarketDepth(orderbook, 1); // 1% depth
+```
+
+## Funding Rates
+
+### Understanding Funding Rates
+
+Funding rates are periodic payments between longs and shorts to keep perpetual prices close to spot:
+
+- **Positive funding rate**: Longs pay shorts (perp price > spot)
+- **Negative funding rate**: Shorts pay longs (perp price < spot)
+
+```typescript
+function analyzeFundingRate(market: any) {
+  const fundingRate = parseFloat(market.nextFundingRate);
+  const fundingRatePercent = fundingRate * 100;
+
+  console.log(
+    `${market.ticker} Funding Rate: ${fundingRatePercent.toFixed(4)}%`
+  );
+
+  if (fundingRate > 0) {
+    console.log("→ Longs pay shorts (bullish sentiment)");
+    console.log(`  Annualized: ${(fundingRate * 365 * 3 * 100).toFixed(2)}%`); // 3 times per day
+  } else if (fundingRate < 0) {
+    console.log("→ Shorts pay longs (bearish sentiment)");
+    console.log(`  Annualized: ${(fundingRate * 365 * 3 * 100).toFixed(2)}%`);
+  } else {
+    console.log("→ No funding payment (balanced)");
+  }
+
+  // Calculate funding cost for a position
+  const positionSize = 10000; // $10k position
+  const fundingCost = positionSize * fundingRate;
+  console.log(`Funding cost for $10k position: $${fundingCost.toFixed(2)}`);
+}
+
+const markets = await client.indexerClient.markets.getPerpetualMarkets();
+analyzeFundingRate(markets.markets["ETH-USD"]);
+```
+
+### Find Best Funding Opportunities
+
+```typescript
+async function findFundingOpportunities(client: CompositeClient) {
+  const response = await client.indexerClient.markets.getPerpetualMarkets();
+
+  const fundingRates = Object.entries(response.markets).map(
+    ([id, market]: [string, any]) => ({
+      marketId: id,
+      ticker: market.ticker,
+      fundingRate: parseFloat(market.nextFundingRate),
+      volume24H: parseFloat(market.volume24H),
+    })
+  );
+
+  // Sort by funding rate
+  fundingRates.sort((a, b) => b.fundingRate - a.fundingRate);
+
+  console.log("Highest Positive Funding (Longs pay shorts):");
+  fundingRates.slice(0, 5).forEach((market) => {
+    const annualized = market.fundingRate * 365 * 3 * 100; // 3x daily
+    console.log(
+      `  ${market.ticker}: ${(market.fundingRate * 100).toFixed(
+        4
+      )}% (${annualized.toFixed(2)}% APR)`
+    );
+  });
+
+  console.log("\nHighest Negative Funding (Shorts pay longs):");
+  fundingRates
+    .slice(-5)
+    .reverse()
+    .forEach((market) => {
+      const annualized = market.fundingRate * 365 * 3 * 100;
+      console.log(
+        `  ${market.ticker}: ${(market.fundingRate * 100).toFixed(
+          4
+        )}% (${annualized.toFixed(2)}% APR)`
+      );
+    });
+}
+```
+
+## Trading Signals
+
+### Price Change Analysis
+
+```typescript
+async function analyzePriceMovements(client: CompositeClient) {
+  const response = await client.indexerClient.markets.getPerpetualMarkets();
+
+  const movements = Object.entries(response.markets)
+    .map(([id, market]: [string, any]) => ({
+      ticker: market.ticker,
+      priceChange: parseFloat(market.priceChange24H),
+      volume: parseFloat(market.volume24H),
+      trades: market.trades24H,
+      openInterest: parseFloat(market.openInterest),
+    }))
+    .filter((m) => m.volume > 100000) // Min $100k volume
+    .sort((a, b) => Math.abs(b.priceChange) - Math.abs(a.priceChange));
+
+  console.log("Largest Price Movements (24h):");
+  movements.slice(0, 10).forEach((market, index) => {
+    const direction = market.priceChange > 0 ? "📈" : "📉";
+    console.log(
+      `${index + 1}. ${direction} ${market.ticker}: ${
+        market.priceChange > 0 ? "+" : ""
+      }${market.priceChange.toFixed(2)}%`
+    );
+    console.log(
+      `   Volume: $${market.volume.toFixed(0)}, Trades: ${market.trades}`
+    );
+  });
+}
+```
+
+### Volume Analysis
+
+```typescript
+async function analyzeVolumeSpikes(client: CompositeClient) {
+  const response = await client.indexerClient.markets.getPerpetualMarkets();
+
+  const volumeData = Object.values(response.markets).map((market: any) => ({
+    ticker: market.ticker,
+    volume24H: parseFloat(market.volume24H),
+    trades24H: market.trades24H,
+    avgTradeSize: parseFloat(market.volume24H) / (market.trades24H || 1),
+    openInterest: parseFloat(market.openInterest),
+    volumeToOI:
+      parseFloat(market.volume24H) / (parseFloat(market.openInterest) || 1),
+  }));
+
+  // Sort by volume/OI ratio (indicates activity level)
+  volumeData.sort((a, b) => b.volumeToOI - a.volumeToOI);
+
+  console.log("Most Active Markets (Volume/OI Ratio):");
+  volumeData.slice(0, 10).forEach((market, index) => {
+    console.log(`${index + 1}. ${market.ticker}:`);
+    console.log(`   Volume: $${market.volume24H.toFixed(0)}`);
+    console.log(`   Open Interest: $${market.openInterest.toFixed(0)}`);
+    console.log(`   Ratio: ${market.volumeToOI.toFixed(2)}x`);
+  });
+}
+```
+
+## Market Monitoring
+
+### Real-time Market Monitor
+
+```typescript
+class MarketMonitor {
+  private client: CompositeClient;
+  private markets: string[];
+  private intervalId?: NodeJS.Timeout;
+
+  constructor(client: CompositeClient, markets: string[]) {
+    this.client = client;
+    this.markets = markets;
+  }
+
+  async checkMarkets() {
+    console.log(`\n[${new Date().toISOString()}] Market Update:`);
+
+    const response =
+      await this.client.indexerClient.markets.getPerpetualMarkets();
+
+    for (const marketId of this.markets) {
+      const market = response.markets[marketId];
+      if (!market) continue;
+
+      console.log(`\n${market.ticker}:`);
+      console.log(`  Price: $${market.oraclePrice}`);
+      console.log(`  24h Change: ${market.priceChange24H}%`);
+      console.log(`  Volume: $${market.volume24H}`);
+      console.log(`  Funding: ${parseFloat(market.nextFundingRate) * 100}%`);
+
+      // Get orderbook
+      const orderbook =
+        await this.client.indexerClient.markets.getPerpetualMarketOrderbook(
+          marketId
+        );
+
+      const bestBid = parseFloat(orderbook.bids[0]?.price || "0");
+      const bestAsk = parseFloat(orderbook.asks[0]?.price || "0");
+      const spread = ((bestAsk - bestBid) / bestBid) * 100;
+
+      console.log(`  Best Bid: $${bestBid.toFixed(2)}`);
+      console.log(`  Best Ask: $${bestAsk.toFixed(2)}`);
+      console.log(`  Spread: ${spread.toFixed(3)}%`);
+    }
+  }
+
+  startMonitoring(intervalSeconds: number = 60) {
+    console.log(
+      `Starting market monitoring every ${intervalSeconds} seconds...`
+    );
+
+    this.intervalId = setInterval(async () => {
+      try {
+        await this.checkMarkets();
+      } catch (error) {
+        console.error("Error checking markets:", error);
+      }
+    }, intervalSeconds * 1000);
+
+    // Initial check
+    this.checkMarkets();
+  }
+
+  stopMonitoring() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      console.log("Market monitoring stopped");
+    }
+  }
+}
+
+// Usage
+const monitor = new MarketMonitor(client, ["ETH-USD", "BTC-USD", "SOL-USD"]);
+monitor.startMonitoring(60); // Update every minute
+```
+
+## Market Data Utilities
+
+### Price Ticker
+
+```typescript
+class PriceTicker {
+  private client: CompositeClient;
+  private prices: Map<string, number> = new Map();
+
+  constructor(client: CompositeClient) {
+    this.client = client;
+  }
+
+  async updatePrices() {
+    const response =
+      await this.client.indexerClient.markets.getPerpetualMarkets();
+
+    for (const [marketId, market] of Object.entries(response.markets)) {
+      this.prices.set(marketId, parseFloat((market as any).oraclePrice));
+    }
+  }
+
+  getPrice(marketId: string): number | undefined {
+    return this.prices.get(marketId);
+  }
+
+  getAllPrices(): Map<string, number> {
+    return new Map(this.prices);
+  }
+
+  async startAutoUpdate(intervalMs: number = 5000) {
+    await this.updatePrices(); // Initial update
+
+    setInterval(async () => {
+      try {
+        await this.updatePrices();
+      } catch (error) {
+        console.error("Error updating prices:", error);
+      }
+    }, intervalMs);
+  }
+}
+
+// Usage
+const ticker = new PriceTicker(client);
+await ticker.startAutoUpdate(5000); // Update every 5 seconds
+
+// Get specific price
+const ethPrice = ticker.getPrice("ETH-USD");
+console.log(`ETH: $${ethPrice}`);
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Cache Market Data" icon="database">
+    Cache market data to reduce API calls:
+    
+    ```typescript
+    class MarketDataCache {
+      private cache: Map<string, { data: any; timestamp: number }> = new Map();
+      private ttl: number = 60000; // 60 seconds
+      
+      set(key: string, data: any) {
+        this.cache.set(key, { data, timestamp: Date.now() });
+      }
+      
+      get(key: string): any | null {
+        const entry = this.cache.get(key);
+        if (!entry) return null;
+        
+        if (Date.now() - entry.timestamp > this.ttl) {
+          this.cache.delete(key);
+          return null;
+        }
+        
+        return entry.data;
+      }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Handle Market Status" icon="traffic-light">
+    Check market status before trading:
+    
+    ```typescript
+    function canTrade(market: any): boolean {
+      return market.status === "ACTIVE";
+    }
+    
+    function canPlaceOrders(market: any): boolean {
+      return ["ACTIVE", "POST_ONLY"].includes(market.status);
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Monitor Orderbook Liquidity" icon="water">
+    Assess liquidity before placing large orders:
+    
+    ```typescript
+    function hasEnoughLiquidity(
+      orderbook: any,
+      side: "BUY" | "SELL",
+      size: number,
+      priceSlippage: number = 0.01 // 1%
+    ): boolean {
+      const levels = side === "BUY" ? orderbook.asks : orderbook.bids;
+      const bestPrice = parseFloat(levels[0]?.price || 0);
+      const maxPrice = side === "BUY" 
+        ? bestPrice * (1 + priceSlippage)
+        : bestPrice * (1 - priceSlippage);
+      
+      let availableSize = 0;
+      for (const level of levels) {
+        const price = parseFloat(level.price);
+        if ((side === "BUY" && price > maxPrice) || 
+            (side === "SELL" && price < maxPrice)) {
+          break;
+        }
+        availableSize += parseFloat(level.size);
+        if (availableSize >= size) return true;
+      }
+      
+      return false;
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="IndexerClient Reference"
+    icon="book"
+    href="/sdk-reference/indexer-client"
+  >
+    Complete Indexer API documentation
+  </Card>
+  <Card title="Types Reference" icon="code" href="/reference/types">
+    Detailed type definitions
+  </Card>
+  <Card title="Place Orders" icon="chart-line" href="/guides/orders">
+    Start trading with market data
+  </Card>
+  <Card title="Balances Guide" icon="scale-balanced" href="/guides/balances">
+    Monitor your positions
+  </Card>
+</CardGroup>

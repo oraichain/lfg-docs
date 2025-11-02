@@ -1,0 +1,303 @@
+---
+title: "Features"
+description: "Explore the key features and capabilities of LFG Perp"
+icon: "star"
+---
+
+# LFG Perp Features
+
+LFG Perp brings institutional-grade perpetual futures trading to the decentralized world with a comprehensive set of features designed for traders and developers.
+
+## Core Trading Features
+
+### Perpetual Contracts
+
+<CardGroup cols={2}>
+  <Card title="No Expiration" icon="infinity">
+    Positions remain open indefinitely until you decide to close them. No need
+    to roll over contracts.
+  </Card>
+  <Card title="Major Markets" icon="chart-line">
+    Trade perpetuals on BTC, ETH, SOL, and other major cryptocurrencies against
+    USD.
+  </Card>
+  <Card title="Leverage Trading" icon="arrows-maximize">
+    Access leveraged positions to amplify your trading strategies and capital
+    efficiency.
+  </Card>
+  <Card title="Funding Rates" icon="percent">
+    Market-driven mechanism keeps perpetual prices anchored to spot, creating
+    arbitrage opportunities.
+  </Card>
+</CardGroup>
+
+### Order Types
+
+LFG Perp supports a comprehensive range of order types for sophisticated trading strategies:
+
+<Tabs>
+  <Tab title="Short-Term Orders">
+    **Characteristics**: - Expire based on block height - Lower gas costs -
+    Faster execution - Ideal for HFT and market making **Best For**: -
+    High-frequency trading - Market making - Grid trading - Scalping strategies
+  </Tab>
+
+  <Tab title="Long-Term Orders">
+    **Characteristics**: - Expire based on timestamp - Can stay open for
+    days/weeks - Standard gas costs - Good-til-time (GTT) support **Best For**:
+    - Position building - Swing trading - Limit orders at specific prices -
+    Stop-loss/take-profit orders
+  </Tab>
+
+  <Tab title="Order Execution">
+    **Supported Types**: - **Limit Orders**: Specify exact price - **Market
+    Orders**: Execute at current price - **Stop Limit**: Trigger limit order at
+    stop price - **Stop Market**: Trigger market order at stop price -
+    **Post-Only**: Guarantee maker status - **Reduce-Only**: Only close
+    positions, not open new ones
+  </Tab>
+</Tabs>
+
+### Advanced Order Options
+
+<AccordionGroup>
+  <Accordion title="Post-Only Orders" icon="layer-plus">
+    Ensure your order is added to the orderbook as a maker, guaranteeing maker fees. Orders that would immediately match are rejected.
+  </Accordion>
+
+{" "}
+<Accordion title="Reduce-Only Orders" icon="arrow-trend-down">
+  Limit risk by only allowing orders that reduce your current position size.
+  Perfect for stop-loss and take-profit strategies.
+</Accordion>
+
+  <Accordion title="Time-in-Force Options" icon="clock">
+    - **GTT** (Good-Til-Time): Valid until timestamp
+    - **IOC** (Immediate-or-Cancel): Execute immediately or cancel
+    - **FOK** (Fill-or-Kill): Fill completely or cancel entirely
+  </Accordion>
+</AccordionGroup>
+
+## Account Management
+
+### Subaccount System
+
+Manage multiple trading subaccounts under a single wallet for sophisticated risk management:
+
+<CardGroup cols={2}>
+  <Card title="Risk Isolation" icon="shield">
+    Each subaccount has isolated collateral and positions. One strategy's losses
+    don't affect others.
+  </Card>
+  <Card title="Strategy Separation" icon="layer-group">
+    Run different trading strategies simultaneously in separate subaccounts.
+  </Card>
+  <Card title="Multi-Market Trading" icon="grid">
+    Organize positions across different markets and timeframes efficiently.
+  </Card>
+  <Card title="Easy Transfers" icon="arrow-right-arrow-left">
+    Move collateral between subaccounts instantly without withdrawal delays.
+  </Card>
+</CardGroup>
+
+### API Key Trading
+
+Enable programmatic trading without exposing your main wallet:
+
+<Tabs>
+  <Tab title="Security">
+    - Main wallet remains offline - API keys have limited permissions - Separate
+    keys for different purposes - Easy key rotation
+  </Tab>
+
+  <Tab title="Use Cases">
+    - Trading bots - Automated strategies - Third-party integrations - Team
+    collaboration
+  </Tab>
+
+  <Tab title="Management">
+    - Create multiple API keys - Set per-key permissions - Monitor key activity
+    - Revoke instantly
+  </Tab>
+</Tabs>
+
+## Platform Features
+
+### Non-Custodial Trading
+
+<CardGroup cols={2}>
+  <Card title="Your Keys" icon="key">
+    You hold your private keys and control your funds at all times. LFG Perp
+    never has access.
+  </Card>
+  <Card title="On-Chain Settlement" icon="link">
+    Every trade is settled on Oraichain blockchain with full transparency and
+    auditability.
+  </Card>
+  <Card title="No KYC" icon="user-shield">
+    Trade without identity verification. Access from anywhere with just a
+    wallet.
+  </Card>
+  <Card title="Open Source" icon="code-branch">
+    All code is open source and auditable. Build trust through transparency.
+  </Card>
+</CardGroup>
+
+### Performance & Reliability
+
+<Tabs>
+  <Tab title="Speed">
+    - Sub-second order execution - Real-time orderbook updates - Low-latency
+    WebSocket feeds - Optimized for HFT strategies
+  </Tab>
+
+  <Tab title="Scalability">
+    - Built on Cosmos SDK - High throughput blockchain - Efficient state
+    management - Handles large order volumes
+  </Tab>
+
+  <Tab title="Reliability">
+    - 24/7 uptime - Redundant infrastructure - Automatic failover - Monitored
+    endpoints
+  </Tab>
+</Tabs>
+
+## Developer Features
+
+### Comprehensive SDK
+
+<CardGroup cols={2}>
+  <Card title="TypeScript/JavaScript" icon="js">
+    Full-featured SDK with complete type safety and IntelliSense support
+  </Card>
+  <Card title="Simple Integration" icon="plug">
+    Single unified client combining read and write operations
+  </Card>
+  <Card title="WebSocket Support" icon="wifi">
+    Real-time data streams for prices, orderbooks, and account updates
+  </Card>
+  <Card title="Examples & Docs" icon="book">
+    Extensive documentation with working examples for common use cases
+  </Card>
+</CardGroup>
+
+### API Access
+
+<AccordionGroup>
+  <Accordion title="REST API" icon="server">
+    Query market data, account information, and historical data via REST endpoints.
+    
+    **Features**:
+    - Comprehensive market data
+    - Account queries
+    - Historical trades
+    - Orderbook snapshots
+  </Accordion>
+
+{" "}
+<Accordion title="WebSocket API" icon="wave-pulse">
+  Subscribe to real-time updates for orderbooks, trades, and account changes.
+  **Subscriptions**: - Live orderbook updates - Real-time fills - Position
+  changes - Market statistics
+</Accordion>
+
+  <Accordion title="RPC Endpoints" icon="network-wired">
+    Direct blockchain access for transaction submission and state queries.
+    
+    **Capabilities**:
+    - Submit transactions
+    - Query blockchain state
+    - Monitor confirmations
+    - Access block data
+  </Accordion>
+</AccordionGroup>
+
+## Market Data
+
+### Real-Time Information
+
+Access comprehensive market data to inform your trading decisions:
+
+<Tabs>
+  <Tab title="Orderbook">
+    - Full depth orderbook - Bid/ask spreads - Liquidity analysis - Price levels
+  </Tab>
+
+  <Tab title="Market Stats">
+    - 24h volume - Price changes - Open interest - Trading activity
+  </Tab>
+
+  <Tab title="Funding">
+    - Current funding rate - Next funding time - Historical rates - APR
+    calculations
+  </Tab>
+
+  <Tab title="Historical">
+    - Price history - Volume history - Trade history - Funding history
+  </Tab>
+</Tabs>
+
+### Oracle-Based Pricing
+
+<CardGroup cols={2}>
+  <Card title="Decentralized Oracles" icon="satellite-dish">
+    Market prices from multiple decentralized oracle providers
+  </Card>
+  <Card title="Manipulation Resistant" icon="shield-check">
+    Aggregated pricing prevents single-source manipulation
+  </Card>
+  <Card title="Real-Time Updates" icon="clock">
+    Continuous price feeds for accurate position valuation
+  </Card>
+  <Card title="Transparent" icon="eye">
+    All oracle data is verifiable on-chain
+  </Card>
+</CardGroup>
+
+## Security Features
+
+<AccordionGroup>
+  <Accordion title="Liquidation Protection" icon="triangle-exclamation">
+    Automated liquidation system protects exchange solvency while giving traders maximum leverage.
+    
+    **How it Works**:
+    - Continuous margin monitoring
+    - Automatic position closure when maintenance margin breached
+    - Insurance fund covers shortfalls
+    - Transparent liquidation process
+  </Accordion>
+
+{" "}
+<Accordion title="Secure Architecture" icon="lock">
+  Built on battle-tested Cosmos SDK with proven security model. **Security
+  Measures**: - Open-source codebase - Multiple audits - Bug bounty program -
+  Regular security updates
+</Accordion>
+
+  <Accordion title="Risk Management" icon="gauge">
+    Built-in tools for managing trading risk and position sizing.
+    
+    **Features**:
+    - Margin health indicators
+    - Position size limits
+    - Free collateral tracking
+    - Liquidation price estimates
+  </Accordion>
+</AccordionGroup>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/introduction/architecture">
+    Learn how LFG Perp is built
+  </Card>
+  <Card title="Start Building" icon="code" href="/development/overview">
+    Develop on LFG Perp
+  </Card>
+  <Card title="Trading Guides" icon="book" href="/guides/orders">
+    Learn how to trade
+  </Card>
+  <Card title="Launch App" icon="rocket" href="https://lfg.land">
+    Start trading now
+  </Card>
+</CardGroup>

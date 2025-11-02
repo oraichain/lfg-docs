@@ -1,0 +1,268 @@
+---
+title: "Quickstart"
+description: "Build your first trading application with the LFG SDK in under 10 minutes"
+icon: "rocket"
+---
+
+## Build Your First Trading Bot
+
+This quickstart guide will walk you through connecting to the LFG DEX, querying market data, and placing your first order.
+
+<Steps>
+  <Step title="Install the SDK">
+    Install the SDK package in your project:
+    
+    ```bash
+    npm install @oraichain/lfg-client-js
+    ```
+    
+    <Check>
+      Make sure you have Node.js 18+ installed
+    </Check>
+  </Step>
+
+  <Step title="Create a Wallet">
+    Generate a new wallet or import an existing one:
+    
+    ```typescript wallet-setup.ts
+    import { LocalWallet } from "@oraichain/lfg-client-js";
+
+    // Option 1: From mnemonic (recommended for production)
+    const wallet = await LocalWallet.fromMnemonic(
+      "your twelve word mnemonic phrase goes here",
+      "lfg" // Address prefix
+    );
+
+    // Option 2: From private key (useful for API keys)
+    const wallet = await LocalWallet.fromPrivateKey(
+      "0xYourPrivateKeyHere",
+      "lfg"
+    );
+
+    console.log("Wallet address:", wallet.address);
+    ```
+
+    <Warning>
+      Never commit private keys or mnemonics to version control. Use environment variables.
+    </Warning>
+
+  </Step>
+
+  <Step title="Connect to the Network">
+    Initialize the CompositeClient with network configuration:
+    
+    ```typescript connect.ts
+    import { Network, CompositeClient, SelectedGasDenom } from "@oraichain/lfg-client-js";
+
+    async function connectToNetwork() {
+      // Use staging for testing, mainnet for production
+      const network = Network.staging();
+
+      // Connect to the network
+      const client = await CompositeClient.connect(network);
+
+      // Set gas denomination (USDC recommended)
+      client.setSelectedGasDenom(SelectedGasDenom.USDC);
+
+      console.log("✅ Connected to chain:", network.chainId);
+
+      return client;
+    }
+    ```
+
+    <Tip>
+      Always use `Network.staging()` for development and testing.
+    </Tip>
+
+  </Step>
+
+  <Step title="Query Market Data">
+    Fetch available markets and their current prices:
+    
+    ```typescript market-data.ts
+    async function getMarketInfo(client: CompositeClient) {
+      // Get all perpetual markets
+      const markets = await client.indexerClient.markets.getPerpetualMarkets();
+      
+      // Display market information
+      for (const [marketId, market] of Object.entries(markets.markets)) {
+        console.log(`${market.ticker}:`);
+        console.log(`  Price: $${market.oraclePrice}`);
+        console.log(`  24h Volume: $${market.volume24H}`);
+        console.log(`  24h Change: ${market.priceChange24H}%`);
+      }
+      
+      return markets;
+    }
+    ```
+  </Step>
+
+  <Step title="Check Your Balance">
+    Query your subaccount balance before trading:
+    
+    ```typescript check-balance.ts
+    import { SubaccountInfo } from "@oraichain/lfg-client-js";
+
+    async function checkBalance(client: CompositeClient, wallet: LocalWallet) {
+      // Get subaccount info (subaccount 0 is the default)
+      const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+
+      // Query balance
+      const account = await client.indexerClient.account.getParentSubaccount(
+        wallet.address,
+        0
+      );
+
+      console.log("Account Balance:");
+      console.log(`  Total Equity: $${account.subaccount.equity}`);
+      console.log(`  Free Collateral: $${account.subaccount.freeCollateral}`);
+
+      return account;
+    }
+    ```
+
+    <Note>
+      You need USDC deposited in your subaccount to trade. See the [Transfers guide](/guides/transfers) for details.
+    </Note>
+
+  </Step>
+
+  <Step title="Place Your First Order">
+    Place a limit order on the ETH-USD market:
+    
+    ```typescript place-order.ts
+    import { OrderSide, Order_TimeInForce, SubaccountInfo } from "@oraichain/lfg-client-js";
+
+    async function placeOrder(
+      client: CompositeClient,
+      wallet: LocalWallet
+    ) {
+      // Get current block height
+      const currentBlock = await client.validatorClient.get.latestBlockHeight();
+
+      // Order expires in 20 blocks (~2 minutes)
+      const goodTilBlock = currentBlock + 20;
+
+      // Generate unique client ID
+      const clientId = Math.floor(Math.random() * 100000000);
+
+      // Create subaccount
+      const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+
+      // Place a BUY order for 0.01 ETH at $3800
+      const tx = await client.placeShortTermOrder(
+        subaccount,
+        "ETH-USD",              // Market
+        OrderSide.BUY,          // Side (BUY or SELL)
+        3800,                   // Price in USD
+        0.01,                   // Size in ETH
+        clientId,               // Unique order ID
+        goodTilBlock,           // Expiration block
+        Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED,
+        false                   // Not reduce-only
+      );
+
+      console.log("✅ Order placed successfully!");
+      console.log("Transaction hash:", Buffer.from(tx.hash).toString("hex"));
+      console.log("Client ID:", clientId);
+
+      return { txHash: Buffer.from(tx.hash).toString("hex"), clientId };
+    }
+    ```
+
+    <Check>
+      Your order is now on the orderbook! Track it using the client ID.
+    </Check>
+
+  </Step>
+</Steps>
+
+## Complete Example
+
+Here's the complete code combining all steps:
+
+```typescript complete-example.ts
+import {
+  Network,
+  CompositeClient,
+  LocalWallet,
+  SubaccountInfo,
+  OrderSide,
+  Order_TimeInForce,
+  SelectedGasDenom,
+} from "@oraichain/lfg-client-js";
+
+async function main() {
+  try {
+    // 1. Create wallet
+    const wallet = await LocalWallet.fromMnemonic(process.env.MNEMONIC!, "lfg");
+    console.log("Wallet address:", wallet.address);
+
+    // 2. Connect to network
+    const network = Network.staging();
+    const client = await CompositeClient.connect(network);
+    client.setSelectedGasDenom(SelectedGasDenom.USDC);
+    console.log("Connected to:", network.chainId);
+
+    // 3. Query market data
+    const markets = await client.indexerClient.markets.getPerpetualMarkets();
+    const ethMarket = markets.markets["ETH-USD"];
+    console.log(`ETH Price: $${ethMarket.oraclePrice}`);
+
+    // 4. Check balance
+    const account = await client.indexerClient.account.getParentSubaccount(
+      wallet.address,
+      0
+    );
+    console.log(`Free Collateral: $${account.subaccount.freeCollateral}`);
+
+    // 5. Place order
+    const currentBlock = await client.validatorClient.get.latestBlockHeight();
+    const goodTilBlock = currentBlock + 20;
+    const clientId = Math.floor(Math.random() * 100000000);
+
+    const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+
+    const tx = await client.placeShortTermOrder(
+      subaccount,
+      "ETH-USD",
+      OrderSide.BUY,
+      3800,
+      0.01,
+      clientId,
+      goodTilBlock,
+      Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED,
+      false
+    );
+
+    console.log("✅ Order placed!");
+    console.log("TX Hash:", Buffer.from(tx.hash).toString("hex"));
+    console.log("Client ID:", clientId);
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
+main();
+```
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/development/configuration">
+    Learn about network configuration and custom RPC endpoints
+  </Card>
+  <Card
+    title="Wallet Management"
+    icon="wallet"
+    href="/guides/wallets-subaccounts"
+  >
+    Deep dive into wallets and subaccount management
+  </Card>
+  <Card title="Order Types" icon="list-check" href="/guides/orders">
+    Explore different order types and trading strategies
+  </Card>
+  <Card title="Market Data" icon="chart-line" href="/guides/markets">
+    Query orderbooks, funding rates, and market statistics
+  </Card>
+</CardGroup>

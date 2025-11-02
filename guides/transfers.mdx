@@ -1,0 +1,714 @@
+---
+title: "Transfers & Deposits"
+description: "Deposit, withdraw, and transfer funds between accounts"
+icon: "arrow-right-arrow-left"
+---
+
+## Overview
+
+Manage your funds with the LFG SDK through deposits, withdrawals, and transfers. This guide covers all fund movement operations.
+
+<CardGroup cols={3}>
+  <Card title="Deposit" icon="arrow-down">
+    Move funds from wallet to trading subaccount
+  </Card>
+  <Card title="Withdraw" icon="arrow-up">
+    Move funds from subaccount back to wallet
+  </Card>
+  <Card title="Transfer" icon="arrow-right-arrow-left">
+    Transfer between subaccounts
+  </Card>
+</CardGroup>
+
+## Deposit to Subaccount
+
+### Basic Deposit
+
+Deposit USDC from your wallet to a trading subaccount:
+
+```typescript
+import {
+  CompositeClient,
+  LocalWallet,
+  SubaccountInfo,
+} from "@oraichain/lfg-client-js";
+
+async function depositToSubaccount(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  amount: number
+) {
+  // Create subaccount
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+
+  // Populate account number cache for better performance
+  await client.populateAccountNumberCache(subaccount.address);
+
+  // Deposit (amount in USDC)
+  const tx = await client.depositToSubaccount(subaccount, amount.toString());
+
+  console.log("✅ Deposit successful!");
+  console.log("Amount: $" + amount);
+  console.log("TX Hash:", Buffer.from(tx.hash).toString("hex"));
+
+  return Buffer.from(tx.hash).toString("hex");
+}
+
+// Deposit $1000 USDC
+await depositToSubaccount(client, wallet, 1000);
+```
+
+<ParamField path="subaccount" type="SubaccountInfo" required>
+  The subaccount to deposit into
+</ParamField>
+
+<ParamField path="amount" type="string" required>
+  Amount in USDC to deposit (as string)
+</ParamField>
+
+<ParamField path="memo" type="string">
+  Optional memo for the transaction
+</ParamField>
+
+<Tip>
+  You must have USDC in your source wallet before depositing to a subaccount.
+  Check your source balance first.
+</Tip>
+
+### Deposit with Memo
+
+```typescript
+const tx = await client.depositToSubaccount(
+  subaccount,
+  "500",
+  "Initial deposit for trading bot" // Optional memo
+);
+```
+
+### Check Source Balance Before Deposit
+
+```typescript
+async function depositWithCheck(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  amount: number
+) {
+  // Get source wallet balances
+  const balances = await client.validatorClient.get.getAccountBalances(
+    wallet.address
+  );
+
+  // Find USDC balance
+  const usdcBalance = balances.find((b) =>
+    b.denom.toLowerCase().includes("usdc")
+  );
+
+  if (!usdcBalance) {
+    throw new Error("No USDC found in source wallet");
+  }
+
+  const usdcAmount = parseInt(usdcBalance.amount) / 1_000_000; // 6 decimals
+
+  console.log(`Source USDC Balance: $${usdcAmount.toFixed(2)}`);
+
+  if (usdcAmount < amount) {
+    throw new Error(
+      `Insufficient USDC. Have: $${usdcAmount}, Need: $${amount}`
+    );
+  }
+
+  // Proceed with deposit
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+  await client.populateAccountNumberCache(subaccount.address);
+
+  const tx = await client.depositToSubaccount(subaccount, amount.toString());
+
+  console.log("✅ Deposited $" + amount);
+  return Buffer.from(tx.hash).toString("hex");
+}
+```
+
+<Note>
+  Deposits require gas fees. Ensure you have enough USDC for both the deposit
+  amount and gas.
+</Note>
+
+## Withdraw from Subaccount
+
+### Basic Withdrawal
+
+Withdraw USDC from a subaccount back to your wallet:
+
+```typescript
+async function withdrawFromSubaccount(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  amount: number
+) {
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+
+  // Populate account number cache
+  await client.populateAccountNumberCache(subaccount.address);
+
+  // Withdraw to the same wallet address
+  const tx = await client.withdrawFromSubaccount(
+    subaccount,
+    amount.toString(),
+    wallet.address // Recipient address
+  );
+
+  console.log("✅ Withdrawal successful!");
+  console.log("Amount: $" + amount);
+  console.log("TX Hash:", Buffer.from(tx.hash).toString("hex"));
+
+  return Buffer.from(tx.hash).toString("hex");
+}
+
+// Withdraw $500 USDC
+await withdrawFromSubaccount(client, wallet, 500);
+```
+
+<ParamField path="subaccount" type="SubaccountInfo" required>
+  The subaccount to withdraw from
+</ParamField>
+
+<ParamField path="amount" type="string" required>
+  Amount in USDC to withdraw (as string)
+</ParamField>
+
+<ParamField path="recipient" type="string" required>
+  Address to receive the withdrawal
+</ParamField>
+
+<ParamField path="memo" type="string">
+  Optional memo for the transaction
+</ParamField>
+
+### Withdraw to Different Address
+
+```typescript
+// Withdraw to a different address
+const recipientAddress = "lfg1anotheraddress...";
+
+const tx = await client.withdrawFromSubaccount(
+  subaccount,
+  "1000",
+  recipientAddress,
+  "Withdrawal to cold storage" // Optional memo
+);
+```
+
+### Safe Withdrawal with Balance Check
+
+```typescript
+async function safeWithdraw(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  amount: number
+) {
+  // Check subaccount balance
+  const account = await client.indexerClient.account.getParentSubaccount(
+    wallet.address,
+    0
+  );
+
+  const freeCollateral = parseFloat(account.subaccount.freeCollateral);
+
+  console.log(`Free Collateral: $${freeCollateral.toFixed(2)}`);
+
+  if (freeCollateral < amount) {
+    throw new Error(
+      `Insufficient free collateral. Available: $${freeCollateral.toFixed(
+        2
+      )}, Requested: $${amount}`
+    );
+  }
+
+  // Check for open positions
+  let hasPositions = false;
+  for (const subaccount of account.subaccount.childSubaccounts) {
+    const positions = subaccount.openPerpetualPositions || {};
+    if (Object.keys(positions).length > 0) {
+      hasPositions = true;
+      console.warn("⚠️  Warning: You have open positions!");
+      break;
+    }
+  }
+
+  // Proceed with withdrawal
+  const subaccountInfo = SubaccountInfo.forLocalWallet(wallet, 0);
+  await client.populateAccountNumberCache(subaccountInfo.address);
+
+  const tx = await client.withdrawFromSubaccount(
+    subaccountInfo,
+    amount.toString(),
+    wallet.address
+  );
+
+  console.log("✅ Withdrawn $" + amount);
+  return Buffer.from(tx.hash).toString("hex");
+}
+```
+
+<Warning>
+  Withdrawing too much collateral while holding positions can lead to
+  liquidation. Always maintain sufficient margin.
+</Warning>
+
+## Transfer Between Subaccounts
+
+### Basic Transfer
+
+Transfer USDC from one subaccount to another:
+
+```typescript
+async function transferBetweenSubaccounts(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  fromSubaccountNumber: number,
+  toSubaccountNumber: number,
+  amount: number
+) {
+  // Source subaccount
+  const sourceSubaccount = SubaccountInfo.forLocalWallet(
+    wallet,
+    fromSubaccountNumber
+  );
+
+  // Populate account number cache
+  await client.populateAccountNumberCache(sourceSubaccount.address);
+
+  // Transfer
+  const tx = await client.transferToSubaccount(
+    sourceSubaccount,
+    wallet.address, // Recipient wallet address
+    toSubaccountNumber, // Recipient subaccount number
+    amount.toString()
+  );
+
+  console.log("✅ Transfer successful!");
+  console.log(`From: Subaccount ${fromSubaccountNumber}`);
+  console.log(`To: Subaccount ${toSubaccountNumber}`);
+  console.log(`Amount: $${amount}`);
+  console.log("TX Hash:", Buffer.from(tx.hash).toString("hex"));
+
+  return Buffer.from(tx.hash).toString("hex");
+}
+
+// Transfer $200 from subaccount 0 to subaccount 1
+await transferBetweenSubaccounts(client, wallet, 0, 1, 200);
+```
+
+<ParamField path="subaccount" type="SubaccountInfo" required>
+  The source subaccount (sending funds)
+</ParamField>
+
+<ParamField path="recipientAddress" type="string" required>
+  The recipient wallet address (can be same wallet)
+</ParamField>
+
+<ParamField path="recipientSubaccountNumber" type="number" required>
+  The destination subaccount number
+</ParamField>
+
+<ParamField path="amount" type="string" required>
+  Amount in USDC to transfer (as string)
+</ParamField>
+
+<ParamField path="memo" type="string">
+  Optional memo for the transaction
+</ParamField>
+
+### Transfer Between Different Wallets
+
+Transfer from your subaccount to another user's subaccount:
+
+```typescript
+const recipientWalletAddress = "lfg1recipientaddress...";
+const recipientSubaccountNumber = 0;
+
+const tx = await client.transferToSubaccount(
+  sourceSubaccount,
+  recipientWalletAddress,
+  recipientSubaccountNumber,
+  "100",
+  "Payment for service"
+);
+```
+
+## Send Tokens from Source
+
+Send tokens directly from your source wallet (outside subaccounts):
+
+```typescript
+async function sendTokenFromSource(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  recipientAddress: string,
+  amount: number,
+  denom?: string
+) {
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+
+  // Populate account number cache
+  await client.validatorClient.populateAccountNumberCache(subaccount.address);
+
+  // Send tokens (defaults to USDC if denom not specified)
+  const tx = await client.validatorClient.post.sendToken(
+    subaccount,
+    recipientAddress,
+    denom || "ibc/...", // USDC IBC denom
+    amount.toString()
+  );
+
+  console.log("✅ Tokens sent!");
+  console.log("TX Hash:", Buffer.from(tx.hash).toString("hex"));
+
+  return Buffer.from(tx.hash).toString("hex");
+}
+```
+
+<Note>
+  This sends tokens from your source wallet, not from subaccounts. Use
+  `transferToSubaccount` for subaccount transfers.
+</Note>
+
+## Transaction Memos
+
+### Adding Memos to Transactions
+
+Memos help you track and organize transactions:
+
+```typescript
+// Deposit with memo
+await client.depositToSubaccount(
+  subaccount,
+  "1000",
+  "Initial capital for Q1 2024"
+);
+
+// Withdraw with memo
+await client.withdrawFromSubaccount(
+  subaccount,
+  "500",
+  wallet.address,
+  "Profit taking - January 2024"
+);
+
+// Transfer with memo
+await client.transferToSubaccount(
+  sourceSubaccount,
+  recipientAddress,
+  recipientSubaccountNumber,
+  "250",
+  "Strategy rebalancing"
+);
+```
+
+### Memo Best Practices
+
+```typescript
+class TransactionMemoHelper {
+  static deposit(purpose: string): string {
+    return `DEPOSIT: ${purpose} - ${new Date().toISOString()}`;
+  }
+
+  static withdraw(reason: string): string {
+    return `WITHDRAW: ${reason} - ${new Date().toISOString()}`;
+  }
+
+  static transfer(from: number, to: number, reason: string): string {
+    return `TRANSFER: ${from}->${to} - ${reason}`;
+  }
+}
+
+// Usage
+await client.depositToSubaccount(
+  subaccount,
+  "1000",
+  TransactionMemoHelper.deposit("Trading bot initial funding")
+);
+```
+
+## Handling Transaction Errors
+
+### Retry Logic
+
+```typescript
+async function depositWithRetry(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  amount: number,
+  maxRetries: number = 3
+): Promise<string> {
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+  await client.populateAccountNumberCache(subaccount.address);
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const tx = await client.depositToSubaccount(
+        subaccount,
+        amount.toString()
+      );
+
+      console.log(`✅ Deposit successful on attempt ${attempt}`);
+      return Buffer.from(tx.hash).toString("hex");
+    } catch (error) {
+      console.error(`Attempt ${attempt} failed:`, error);
+
+      if (attempt === maxRetries) {
+        throw new Error(`Deposit failed after ${maxRetries} attempts`);
+      }
+
+      // Exponential backoff
+      const delay = Math.pow(2, attempt) * 1000;
+      console.log(`Retrying in ${delay}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  throw new Error("Unexpected error in depositWithRetry");
+}
+```
+
+### Error Handling
+
+```typescript
+async function safeDeposit(
+  client: CompositeClient,
+  wallet: LocalWallet,
+  amount: number
+) {
+  try {
+    const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+    await client.populateAccountNumberCache(subaccount.address);
+
+    const tx = await client.depositToSubaccount(subaccount, amount.toString());
+
+    return {
+      success: true,
+      txHash: Buffer.from(tx.hash).toString("hex"),
+      amount,
+    };
+  } catch (error: any) {
+    console.error("Deposit failed:", error);
+
+    // Handle specific errors
+    if (error.message?.includes("insufficient funds")) {
+      return {
+        success: false,
+        error: "Insufficient USDC in source wallet",
+        code: "INSUFFICIENT_FUNDS",
+      };
+    } else if (error.message?.includes("gas")) {
+      return {
+        success: false,
+        error: "Insufficient gas",
+        code: "INSUFFICIENT_GAS",
+      };
+    } else {
+      return {
+        success: false,
+        error: error.message || "Unknown error",
+        code: "UNKNOWN_ERROR",
+      };
+    }
+  }
+}
+```
+
+## Fund Management Strategies
+
+### Automated Rebalancing
+
+```typescript
+class SubaccountRebalancer {
+  private client: CompositeClient;
+  private wallet: LocalWallet;
+  private targetAllocations: Map<number, number>;
+
+  constructor(
+    client: CompositeClient,
+    wallet: LocalWallet,
+    allocations: { subaccount: number; targetPercent: number }[]
+  ) {
+    this.client = client;
+    this.wallet = wallet;
+    this.targetAllocations = new Map(
+      allocations.map((a) => [a.subaccount, a.targetPercent / 100])
+    );
+  }
+
+  async rebalance() {
+    // Get total equity across all subaccounts
+    const account = await this.client.indexerClient.account.getParentSubaccount(
+      this.wallet.address,
+      0
+    );
+
+    const totalEquity = parseFloat(account.subaccount.equity);
+
+    console.log(`Total Equity: $${totalEquity.toFixed(2)}`);
+
+    // Calculate required transfers
+    const transfers: { from: number; to: number; amount: number }[] = [];
+
+    for (const subaccount of account.subaccount.childSubaccounts) {
+      const subaccountNumber = subaccount.subaccountNumber;
+      const currentEquity = parseFloat(subaccount.equity);
+      const targetAllocation =
+        this.targetAllocations.get(subaccountNumber) || 0;
+      const targetEquity = totalEquity * targetAllocation;
+      const difference = targetEquity - currentEquity;
+
+      console.log(`Subaccount ${subaccountNumber}:`);
+      console.log(`  Current: $${currentEquity.toFixed(2)}`);
+      console.log(`  Target: $${targetEquity.toFixed(2)}`);
+      console.log(`  Difference: $${difference.toFixed(2)}`);
+
+      // Only transfer if difference is significant
+      if (Math.abs(difference) > 10) {
+        // TODO: Implement transfer logic
+      }
+    }
+
+    console.log("Rebalancing complete");
+  }
+}
+
+// Usage
+const rebalancer = new SubaccountRebalancer(client, wallet, [
+  { subaccount: 0, targetPercent: 50 }, // 50% in subaccount 0
+  { subaccount: 1, targetPercent: 30 }, // 30% in subaccount 1
+  { subaccount: 2, targetPercent: 20 }, // 20% in subaccount 2
+]);
+
+await rebalancer.rebalance();
+```
+
+### Emergency Withdrawal
+
+```typescript
+async function emergencyWithdrawAll(
+  client: CompositeClient,
+  wallet: LocalWallet
+) {
+  console.log("⚠️  Initiating emergency withdrawal...");
+
+  const account = await this.client.indexerClient.account.getParentSubaccount(
+    wallet.address,
+    0
+  );
+
+  const withdrawals = [];
+
+  for (const subaccount of account.subaccount.childSubaccounts) {
+    const freeCollateral = parseFloat(subaccount.freeCollateral);
+
+    if (freeCollateral > 1) {
+      // Min $1 to withdraw
+      const subaccountInfo = SubaccountInfo.forLocalWallet(
+        wallet,
+        subaccount.subaccountNumber
+      );
+
+      await client.populateAccountNumberCache(subaccountInfo.address);
+
+      const tx = await client.withdrawFromSubaccount(
+        subaccountInfo,
+        freeCollateral.toFixed(2),
+        wallet.address,
+        "Emergency withdrawal"
+      );
+
+      withdrawals.push({
+        subaccount: subaccount.subaccountNumber,
+        amount: freeCollateral,
+        txHash: Buffer.from(tx.hash).toString("hex"),
+      });
+
+      console.log(
+        `✅ Withdrawn $${freeCollateral.toFixed(2)} from subaccount ${
+          subaccount.subaccountNumber
+        }`
+      );
+    }
+  }
+
+  console.log(`Total withdrawn from ${withdrawals.length} subaccounts`);
+  return withdrawals;
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always Check Balances First" icon="scale-balanced">
+    Verify sufficient funds before initiating transfers:
+    
+    ```typescript
+    const account = await client.indexerClient.account.getParentSubaccount(
+      wallet.address,
+      0
+    );
+    const freeCollateral = parseFloat(account.subaccount.freeCollateral);
+    
+    if (freeCollateral < amount) {
+      throw new Error("Insufficient funds");
+    }
+    ```
+  </Accordion>
+
+{" "}
+<Accordion title="Use Meaningful Memos" icon="memo">
+  Add descriptive memos to track transaction purposes: ```typescript const memo
+  = `Bot #${botId} - ${strategy} - ${timestamp}`; ```
+</Accordion>
+
+{" "}
+<Accordion title="Maintain Adequate Margin" icon="shield">
+  Never withdraw all free collateral while holding positions: ```typescript //
+  Leave 20% buffer for price movements const maxWithdraw = freeCollateral * 0.8;
+  ```
+</Accordion>
+
+  <Accordion title="Handle Network Errors" icon="wifi">
+    Implement retry logic for network failures:
+    
+    ```typescript
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await client.depositToSubaccount(/* ... */);
+      } catch (error) {
+        if (attempt === 2) throw error;
+        await sleep(1000 * Math.pow(2, attempt));
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Market Data" icon="chart-mixed" href="/guides/markets">
+    Query markets and orderbooks
+  </Card>
+  <Card title="Balances Guide" icon="scale-balanced" href="/guides/balances">
+    Monitor balances and positions
+  </Card>
+  <Card
+    title="CompositeClient Reference"
+    icon="book"
+    href="/sdk-reference/composite-client"
+  >
+    Complete CompositeClient API
+  </Card>
+  <Card
+    title="ValidatorClient Reference"
+    icon="server"
+    href="/sdk-reference/validator-client"
+  >
+    Detailed ValidatorClient documentation
+  </Card>
+</CardGroup>

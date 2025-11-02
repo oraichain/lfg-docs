@@ -1,0 +1,139 @@
+---
+title: "SubaccountInfo"
+description: "Trading subaccount representation"
+icon: "layer-group"
+---
+
+## Overview
+
+`SubaccountInfo` represents a trading subaccount under a wallet, used for all trading operations.
+
+```typescript
+import { SubaccountInfo } from "@oraichain/lfg-client-js";
+```
+
+## Static Methods
+
+### forLocalWallet()
+
+Create a subaccount for standard wallet-based trading.
+
+```typescript
+const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+```
+
+<ParamField path="wallet" type="LocalWallet" required>
+  The LocalWallet instance
+</ParamField>
+
+<ParamField path="subaccountNumber" type="number" required>
+  Subaccount index (0-127). Use 0 for primary account.
+</ParamField>
+
+**Returns**: `SubaccountInfo`
+
+### forPermissionedWallet()
+
+Create a subaccount for API key-based trading.
+
+```typescript
+const subaccount = SubaccountInfo.forPermissionedWallet(
+  apiKeyWallet,
+  mainWalletAddress,
+  0,
+  [authenticatorId]
+);
+```
+
+<ParamField path="wallet" type="LocalWallet" required>
+  API key wallet (signs transactions)
+</ParamField>
+
+<ParamField path="address" type="string" required>
+  Main wallet address (owns funds)
+</ParamField>
+
+<ParamField path="subaccountNumber" type="number" required>
+  Subaccount index (0-127)
+</ParamField>
+
+<ParamField path="authenticatorIds" type="number[]" required>
+  Authenticator IDs granting permission
+</ParamField>
+
+**Returns**: `SubaccountInfo`
+
+## Properties
+
+### address
+
+The wallet address owning this subaccount.
+
+```typescript
+console.log(subaccount.address); // "lfg1..."
+```
+
+**Type**: `string`
+
+### subaccountNumber
+
+The subaccount number (0-127).
+
+```typescript
+console.log(subaccount.subaccountNumber); // 0
+```
+
+**Type**: `number`
+
+## Usage Examples
+
+### Multiple Subaccounts
+
+```typescript
+const wallet = await LocalWallet.fromMnemonic(mnemonic, "lfg");
+
+// Create multiple subaccounts for different strategies
+const spotHedging = SubaccountInfo.forLocalWallet(wallet, 0);
+const momentumTrading = SubaccountInfo.forLocalWallet(wallet, 1);
+const marketMaking = SubaccountInfo.forLocalWallet(wallet, 2);
+```
+
+### API Key Trading
+
+```typescript
+const apiKeyWallet = await LocalWallet.fromPrivateKey(apiKey, "lfg");
+const mainAddress = "lfg1mainwalletaddress...";
+
+// Get authenticator ID
+const auths = await client.getAuthenticators(mainAddress);
+const authenticatorId = auths.accountAuthenticators[0].id;
+
+// Create permissioned subaccount
+const subaccount = SubaccountInfo.forPermissionedWallet(
+  apiKeyWallet,
+  mainAddress,
+  0,
+  [authenticatorId]
+);
+
+// Place order using API key
+await client.placeShortTermOrder(subaccount /* ... */);
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Wallets Guide" icon="wallet" href="/guides/wallets-subaccounts">
+    Complete subaccount management guide
+  </Card>
+  <Card title="LocalWallet" icon="key" href="/sdk-reference/local-wallet">
+    Wallet creation and management
+  </Card>
+  <Card
+    title="CompositeClient"
+    icon="layer-group"
+    href="/sdk-reference/composite-client"
+  >
+    Use subaccounts for trading
+  </Card>
+</CardGroup>

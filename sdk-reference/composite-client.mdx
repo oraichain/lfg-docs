@@ -1,0 +1,430 @@
+---
+title: "CompositeClient"
+description: "Primary interface for interacting with the LFG DEX"
+icon: "layer-group"
+---
+
+## Overview
+
+`CompositeClient` is the main entry point for interacting with the LFG DEX. It combines the IndexerClient (read operations) and ValidatorClient (write operations) into a unified interface.
+
+```typescript
+import { CompositeClient, Network } from "@oraichain/lfg-client-js";
+```
+
+## Static Methods
+
+### connect()
+
+Connect to a network and create a CompositeClient instance.
+
+```typescript
+const network = Network.staging();
+const client = await CompositeClient.connect(network);
+```
+
+<ParamField path="network" type="Network" required>
+  Network configuration to connect to
+</ParamField>
+
+**Returns**: `Promise<CompositeClient>`
+
+## Properties
+
+### indexerClient
+
+Access the IndexerClient for read-only operations.
+
+```typescript
+const markets = await client.indexerClient.markets.getPerpetualMarkets();
+const account = await client.indexerClient.account.getParentSubaccount(
+  address,
+  0
+);
+```
+
+### validatorClient
+
+Access the ValidatorClient for blockchain operations.
+
+```typescript
+const blockHeight = await client.validatorClient.get.latestBlockHeight();
+const balances = await client.validatorClient.get.getAccountBalances(address);
+```
+
+## Configuration Methods
+
+### setSelectedGasDenom()
+
+Set which token to use for gas fees.
+
+```typescript
+import { SelectedGasDenom } from "@oraichain/lfg-client-js";
+
+client.setSelectedGasDenom(SelectedGasDenom.USDC); // Use USDC for gas
+client.setSelectedGasDenom(SelectedGasDenom.NATIVE); // Use native token
+```
+
+<ParamField path="denom" type="SelectedGasDenom" required>
+  `SelectedGasDenom.USDC` or `SelectedGasDenom.NATIVE`
+</ParamField>
+
+### populateAccountNumberCache()
+
+Pre-populate the account number cache for faster transactions.
+
+```typescript
+await client.populateAccountNumberCache(wallet.address);
+```
+
+<ParamField path="address" type="string" required>
+  Address to cache account number for
+</ParamField>
+
+## Trading Methods
+
+### placeShortTermOrder()
+
+Place a short-term order that expires based on block height.
+
+```typescript
+import { OrderSide, Order_TimeInForce } from "@oraichain/lfg-client-js";
+
+const tx = await client.placeShortTermOrder(
+  subaccount,
+  "ETH-USD",
+  OrderSide.BUY,
+  3800,
+  0.1,
+  clientId,
+  goodTilBlock,
+  Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED,
+  false
+);
+```
+
+<ParamField path="subaccount" type="SubaccountInfo" required>
+  Subaccount placing the order
+</ParamField>
+
+<ParamField path="marketId" type="string" required>
+  Market identifier (e.g., "ETH-USD")
+</ParamField>
+
+<ParamField path="side" type="OrderSide" required>
+  `OrderSide.BUY` or `OrderSide.SELL`
+</ParamField>
+
+<ParamField path="price" type="number" required>
+  Order price in quote currency
+</ParamField>
+
+<ParamField path="size" type="number" required>
+  Order size in base currency
+</ParamField>
+
+<ParamField path="clientId" type="number" required>
+  Unique order identifier
+</ParamField>
+
+<ParamField path="goodTilBlock" type="number" required>
+  Block height when order expires
+</ParamField>
+
+<ParamField path="timeInForce" type="Order_TimeInForce" required>
+  Time in force policy
+</ParamField>
+
+<ParamField path="reduceOnly" type="boolean" required>
+  Whether order can only reduce position
+</ParamField>
+
+**Returns**: `Promise<BroadcastTxResponse>`
+
+### placeOrder()
+
+Place a long-term order with timestamp-based expiration.
+
+```typescript
+import {
+  OrderType,
+  OrderTimeInForce,
+  OrderExecution,
+} from "@oraichain/lfg-client-js";
+
+const tx = await client.placeOrder(
+  subaccount,
+  "ETH-USD",
+  OrderType.LIMIT,
+  OrderSide.BUY,
+  3800,
+  0.1,
+  clientId,
+  OrderTimeInForce.GTT,
+  24 * 60 * 60, // 24 hours
+  OrderExecution.DEFAULT,
+  false,
+  false
+);
+```
+
+<ParamField path="orderType" type="OrderType" required>
+  Order type (LIMIT, MARKET, STOP_LIMIT, STOP_MARKET)
+</ParamField>
+
+<ParamField path="timeInForce" type="OrderTimeInForce" required>
+  GTT (Good-til-time), IOC (Immediate-or-cancel), or FOK (Fill-or-kill)
+</ParamField>
+
+<ParamField path="goodTilTimeInSeconds" type="number" required>
+  Seconds from now until order expires
+</ParamField>
+
+<ParamField path="execution" type="OrderExecution" required>
+  Execution type (DEFAULT, POST_ONLY, IOC)
+</ParamField>
+
+<ParamField path="postOnly" type="boolean" required>
+  Whether order must be maker
+</ParamField>
+
+**Returns**: `Promise<BroadcastTxResponse>`
+
+### cancelOrder()
+
+Cancel an existing order.
+
+```typescript
+import { OrderFlags } from "@oraichain/lfg-client-js";
+
+const tx = await client.cancelOrder(
+  subaccount,
+  clientId,
+  OrderFlags.SHORT_TERM,
+  "ETH-USD",
+  goodTilBlock,
+  0
+);
+```
+
+<ParamField path="subaccount" type="SubaccountInfo" required>
+  Subaccount that placed the order
+</ParamField>
+
+<ParamField path="clientId" type="number" required>
+  Client ID of order to cancel
+</ParamField>
+
+<ParamField path="orderFlags" type="OrderFlags" required>
+  Order type flags (SHORT_TERM or LONG_TERM)
+</ParamField>
+
+<ParamField path="marketId" type="string" required>
+  Market identifier
+</ParamField>
+
+<ParamField path="goodTilBlock" type="number" required>
+  New expiration block (for short-term)
+</ParamField>
+
+<ParamField path="goodTilTimeInSeconds" type="number" required>
+  Seconds until expiration (for long-term)
+</ParamField>
+
+**Returns**: `Promise<BroadcastTxResponse>`
+
+## Fund Management Methods
+
+### depositToSubaccount()
+
+Deposit funds from wallet to subaccount.
+
+```typescript
+const tx = await client.depositToSubaccount(
+  subaccount,
+  "1000", // $1000 USDC
+  "Initial deposit"
+);
+```
+
+<ParamField path="subaccount" type="SubaccountInfo" required>
+  Destination subaccount
+</ParamField>
+
+<ParamField path="amount" type="string" required>
+  Amount in USDC (as string)
+</ParamField>
+
+<ParamField path="memo" type="string">
+  Optional transaction memo
+</ParamField>
+
+**Returns**: `Promise<BroadcastTxResponse>`
+
+### withdrawFromSubaccount()
+
+Withdraw funds from subaccount to wallet.
+
+```typescript
+const tx = await client.withdrawFromSubaccount(
+  subaccount,
+  "500", // $500 USDC
+  wallet.address,
+  "Withdrawal to wallet"
+);
+```
+
+<ParamField path="subaccount" type="SubaccountInfo" required>
+  Source subaccount
+</ParamField>
+
+<ParamField path="amount" type="string" required>
+  Amount in USDC (as string)
+</ParamField>
+
+<ParamField path="recipient" type="string" required>
+  Recipient address
+</ParamField>
+
+<ParamField path="memo" type="string">
+  Optional transaction memo
+</ParamField>
+
+**Returns**: `Promise<BroadcastTxResponse>`
+
+### transferToSubaccount()
+
+Transfer funds between subaccounts.
+
+```typescript
+const tx = await client.transferToSubaccount(
+  sourceSubaccount,
+  recipientAddress,
+  recipientSubaccountNumber,
+  "200", // $200 USDC
+  "Transfer between subaccounts"
+);
+```
+
+<ParamField path="subaccount" type="SubaccountInfo" required>
+  Source subaccount
+</ParamField>
+
+<ParamField path="recipientAddress" type="string" required>
+  Recipient wallet address
+</ParamField>
+
+<ParamField path="recipientSubaccountNumber" type="number" required>
+  Recipient subaccount number
+</ParamField>
+
+<ParamField path="amount" type="string" required>
+  Amount in USDC (as string)
+</ParamField>
+
+<ParamField path="memo" type="string">
+  Optional transaction memo
+</ParamField>
+
+**Returns**: `Promise<BroadcastTxResponse>`
+
+## Authentication Methods
+
+### getAuthenticators()
+
+Get authenticators for an address (used for API key trading).
+
+```typescript
+const auths = await client.getAuthenticators(address);
+
+for (const auth of auths.accountAuthenticators) {
+  console.log("Authenticator ID:", auth.id);
+  console.log("Type:", auth.type);
+}
+```
+
+<ParamField path="address" type="string" required>
+  Address to query authenticators for
+</ParamField>
+
+**Returns**: `Promise<{ accountAuthenticators: Authenticator[] }>`
+
+## Complete Example
+
+```typescript
+import {
+  Network,
+  CompositeClient,
+  LocalWallet,
+  SubaccountInfo,
+  OrderSide,
+  Order_TimeInForce,
+  SelectedGasDenom,
+} from "@oraichain/lfg-client-js";
+
+async function tradingExample() {
+  // 1. Create wallet
+  const wallet = await LocalWallet.fromMnemonic(mnemonic, "lfg");
+
+  // 2. Connect to network
+  const network = Network.staging();
+  const client = await CompositeClient.connect(network);
+  client.setSelectedGasDenom(SelectedGasDenom.USDC);
+
+  // 3. Create subaccount
+  const subaccount = SubaccountInfo.forLocalWallet(wallet, 0);
+  await client.populateAccountNumberCache(subaccount.address);
+
+  // 4. Get market data
+  const markets = await client.indexerClient.markets.getPerpetualMarkets();
+  const ethPrice = parseFloat(markets.markets["ETH-USD"].oraclePrice);
+
+  // 5. Place order
+  const currentBlock = await client.validatorClient.get.latestBlockHeight();
+  const goodTilBlock = currentBlock + 20;
+  const clientId = Math.floor(Math.random() * 100000000);
+
+  const tx = await client.placeShortTermOrder(
+    subaccount,
+    "ETH-USD",
+    OrderSide.BUY,
+    ethPrice,
+    0.01,
+    clientId,
+    goodTilBlock,
+    Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED,
+    false
+  );
+
+  console.log("Order placed:", Buffer.from(tx.hash).toString("hex"));
+}
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card
+    title="IndexerClient"
+    icon="database"
+    href="/sdk-reference/indexer-client"
+  >
+    Read-only market data queries
+  </Card>
+  <Card
+    title="ValidatorClient"
+    icon="server"
+    href="/sdk-reference/validator-client"
+  >
+    Blockchain transaction operations
+  </Card>
+  <Card
+    title="SubaccountInfo"
+    icon="layer-group"
+    href="/sdk-reference/subaccount-info"
+  >
+    Trading account management
+  </Card>
+  <Card title="Orders Guide" icon="chart-line" href="/guides/orders">
+    Complete orders guide
+  </Card>
+</CardGroup>

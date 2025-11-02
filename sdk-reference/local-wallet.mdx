@@ -1,0 +1,127 @@
+---
+title: "LocalWallet"
+description: "Wallet management and transaction signing"
+icon: "wallet"
+---
+
+## Overview
+
+`LocalWallet` handles cryptographic key management and transaction signing for the LFG SDK.
+
+```typescript
+import { LocalWallet } from "@oraichain/lfg-client-js";
+```
+
+## Static Methods
+
+### fromMnemonic()
+
+Create a wallet from a BIP39 mnemonic phrase.
+
+```typescript
+const wallet = await LocalWallet.fromMnemonic(
+  "your twelve word mnemonic phrase goes here",
+  "lfg"
+);
+```
+
+<ParamField path="mnemonic" type="string" required>
+  12 or 24-word BIP39 mnemonic phrase
+</ParamField>
+
+<ParamField path="prefix" type="string" required>
+  Address prefix (use `"lfg"` for LFG DEX)
+</ParamField>
+
+**Returns**: `Promise<LocalWallet>`
+
+### fromPrivateKey()
+
+Create a wallet from a private key.
+
+```typescript
+const wallet = await LocalWallet.fromPrivateKey("0xYourPrivateKeyHex", "lfg");
+```
+
+<ParamField path="privateKey" type="string" required>
+  Private key as hex string (with or without `0x` prefix)
+</ParamField>
+
+<ParamField path="prefix" type="string" required>
+  Address prefix (use `"lfg"`)
+</ParamField>
+
+**Returns**: `Promise<LocalWallet>`
+
+## Properties
+
+### address
+
+The wallet's public address.
+
+```typescript
+console.log(wallet.address); // "lfg1..."
+```
+
+**Type**: `string`
+
+### pubKey
+
+The wallet's public key.
+
+```typescript
+console.log(wallet.pubKey?.value); // Public key bytes
+```
+
+**Type**: `PubKey | undefined`
+
+## Usage Examples
+
+### Environment Variables
+
+```typescript
+// From mnemonic
+const wallet = await LocalWallet.fromMnemonic(process.env.MNEMONIC!, "lfg");
+
+// From private key
+const wallet = await LocalWallet.fromPrivateKey(
+  process.env.PRIVATE_KEY!,
+  "lfg"
+);
+```
+
+### Wallet Factory
+
+```typescript
+async function createWallet(): Promise<LocalWallet> {
+  if (process.env.MNEMONIC) {
+    return await LocalWallet.fromMnemonic(process.env.MNEMONIC, "lfg");
+  } else if (process.env.PRIVATE_KEY) {
+    return await LocalWallet.fromPrivateKey(process.env.PRIVATE_KEY, "lfg");
+  }
+  throw new Error("No wallet credentials found");
+}
+```
+
+<Warning>
+  Never commit private keys or mnemonics to version control. Always use
+  environment variables or secure secret management.
+</Warning>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Wallets Guide" icon="key" href="/guides/wallets-subaccounts">
+    Complete wallet management guide
+  </Card>
+  <Card
+    title="SubaccountInfo"
+    icon="layer-group"
+    href="/sdk-reference/subaccount-info"
+  >
+    Create trading subaccounts
+  </Card>
+  <Card title="Security" icon="shield" href="/resources/security">
+    Security best practices
+  </Card>
+</CardGroup>

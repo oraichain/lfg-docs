@@ -1,0 +1,612 @@
+---
+title: "Balances & Positions"
+description: "Query account balances, positions, and PnL on the LFG DEX"
+icon: "scale-balanced"
+---
+
+## Overview
+
+Monitor your trading account balances, open positions, and profit/loss using the Indexer Client. This guide covers all balance and position-related queries.
+
+<CardGroup cols={2}>
+  <Card title="Account Balances" icon="wallet">
+    Query total equity, free collateral, and margin usage
+  </Card>
+  <Card title="Open Positions" icon="chart-line">
+    Track position size, entry price, and unrealized PnL
+  </Card>
+</CardGroup>
+
+## Querying Account Balances
+
+### Get Parent Subaccount
+
+The parent subaccount contains all child subaccounts and their balances:
+
+```typescript
+async function getAccountBalances(
+  client: CompositeClient,
+  address: string,
+  parentSubaccountNumber: number = 0
+) {
+  const account = await client.indexerClient.account.getParentSubaccount(
+    address,
+    parentSubaccountNumber
+  );
+
+  console.log("Parent Subaccount:", parentSubaccountNumber);
+  console.log("Total Equity:", account.subaccount.equity);
+  console.log("Free Collateral:", account.subaccount.freeCollateral);
+
+  // Iterate through child subaccounts
+  for (const subaccount of account.subaccount.childSubaccounts) {
+    console.log(`\nSubaccount ${subaccount.subaccountNumber}:`);
+    console.log(`  Equity: $${subaccount.equity}`);
+    console.log(`  Free Collateral: $${subaccount.freeCollateral}`);
+    console.log(`  Margin Usage: $${subaccount.marginUsage}`);
+  }
+
+  return account;
+}
+```
+
+<ResponseField name="equity" type="string">
+  Total account value including unrealized PnL
+</ResponseField>
+
+<ResponseField name="freeCollateral" type="string">
+  Available collateral for opening new positions
+</ResponseField>
+
+<ResponseField name="marginUsage" type="string">
+  Currently used margin for open positions
+</ResponseField>
+
+### Understanding Balance Metrics
+
+<AccordionGroup>
+  <Accordion title="Total Equity" icon="coins">
+    **Formula**: `Equity = Free Collateral + Margin Usage + Unrealized PnL`
+    
+    Total value of your account including all open positions at current market prices.
+    
+    ```typescript
+    const equity = parseFloat(subaccount.equity);
+    console.log(`Total Account Value: $${equity.toFixed(2)}`);
+    ```
+  </Accordion>
+
+{" "}
+<Accordion title="Free Collateral" icon="hand-holding-dollar">
+  **Definition**: Available collateral that can be used to open new positions.
+  ```typescript const freeCollateral = parseFloat(subaccount.freeCollateral);
+  const maxPositionSize = freeCollateral * leverage; ```
+  <Tip>Always maintain sufficient free collateral to avoid liquidation.</Tip>
+</Accordion>
+
+  <Accordion title="Margin Usage" icon="chart-pie">
+    **Definition**: Collateral currently allocated to open positions.
+    
+    ```typescript
+    const marginUsage = parseFloat(subaccount.marginUsage);
+    const equity = parseFloat(subaccount.equity);
+    const utilizationRate = (marginUsage / equity) * 100;
+    
+    console.log(`Margin Utilization: ${utilizationRate.toFixed(1)}%`);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Querying Open Positions
+
+### Get All Positions
+
+```typescript
+async function getOpenPositions(
+  client: CompositeClient,
+  address: string,
+  parentSubaccountNumber: number = 0
+) {
+  const account = await client.indexerClient.account.getParentSubaccount(
+    address,
+    parentSubaccountNumber
+  );
+
+  const positions = [];
+
+  for (const subaccount of account.subaccount.childSubaccounts) {
+    const openPositions = subaccount.openPerpetualPositions || {};
+
+    for (const [market, position] of Object.entries(openPositions)) {
+      positions.push({
+        subaccountNumber: subaccount.subaccountNumber,
+        market: position.market,
+        side: position.side,
+        size: parseFloat(position.size || "0"),
+        entryPrice: parseFloat(position.entryPrice || "0"),
+        unrealizedPnl: parseFloat(position.unrealizedPnl || "0"),
+        realizedPnl: parseFloat(position.realizedPnl || "0"),
+        netFunding: parseFloat(position.netFunding || "0"),
+      });
+    }
+  }
+
+  return positions;
+}
+
+// Display positions
+const positions = await getOpenPositions(client, wallet.address, 0);
+
+positions.forEach((pos) => {
+  console.log(`${pos.market}:`);
+  console.log(`  Subaccount: ${pos.subaccountNumber}`);
+  console.log(`  Side: ${pos.side}`);
+  console.log(`  Size: ${pos.size}`);
+  console.log(`  Entry Price: $${pos.entryPrice}`);
+  console.log(`  Unrealized PnL: $${pos.unrealizedPnl.toFixed(2)}`);
+  console.log(`  Net Funding: $${pos.netFunding.toFixed(2)}`);
+});
+```
+
+### Position Fields
+
+<ResponseField name="market" type="string">
+  Market identifier (e.g., "ETH-USD")
+</ResponseField>
+
+<ResponseField name="side" type="string">
+  Position side: `"LONG"` or `"SHORT"`
+</ResponseField>
+
+<ResponseField name="size" type="string">
+  Position size in base currency
+</ResponseField>
+
+<ResponseField name="maxSize" type="string">
+  Maximum position size reached
+</ResponseField>
+
+<ResponseField name="entryPrice" type="string">
+  Average entry price for the position
+</ResponseField>
+
+<ResponseField name="exitPrice" type="string">
+  Exit price (for closed positions)
+</ResponseField>
+
+<ResponseField name="realizedPnl" type="string">
+  Realized profit/loss from closed portion
+</ResponseField>
+
+<ResponseField name="unrealizedPnl" type="string">
+  Current unrealized profit/loss at market price
+</ResponseField>
+
+<ResponseField name="netFunding" type="string">
+  Net funding payments received/paid
+</ResponseField>
+
+<ResponseField name="sumOpen" type="string">
+  Sum of all opening trades
+</ResponseField>
+
+<ResponseField name="sumClose" type="string">
+  Sum of all closing trades
+</ResponseField>
+
+## Calculating PnL
+
+### Unrealized PnL
+
+Calculate unrealized PnL for a position:
+
+```typescript
+async function calculateUnrealizedPnL(client: CompositeClient, position: any) {
+  // Get current market price
+  const markets = await client.indexerClient.markets.getPerpetualMarkets();
+  const market = markets.markets[position.market];
+  const currentPrice = parseFloat(market.oraclePrice);
+
+  const entryPrice = parseFloat(position.entryPrice);
+  const size = parseFloat(position.size);
+
+  let pnl = 0;
+
+  if (position.side === "LONG") {
+    pnl = (currentPrice - entryPrice) * size;
+  } else {
+    // SHORT
+    pnl = (entryPrice - currentPrice) * size;
+  }
+
+  console.log(`Unrealized PnL: $${pnl.toFixed(2)}`);
+  console.log(`ROI: ${((pnl / (entryPrice * size)) * 100).toFixed(2)}%`);
+
+  return pnl;
+}
+```
+
+### Total PnL
+
+Calculate total PnL including realized and unrealized:
+
+```typescript
+function calculateTotalPnL(position: any): number {
+  const realized = parseFloat(position.realizedPnl || "0");
+  const unrealized = parseFloat(position.unrealizedPnl || "0");
+  const funding = parseFloat(position.netFunding || "0");
+
+  const totalPnL = realized + unrealized + funding;
+
+  console.log(`Realized PnL: $${realized.toFixed(2)}`);
+  console.log(`Unrealized PnL: $${unrealized.toFixed(2)}`);
+  console.log(`Net Funding: $${funding.toFixed(2)}`);
+  console.log(`Total PnL: $${totalPnL.toFixed(2)}`);
+
+  return totalPnL;
+}
+```
+
+## Monitoring Account Health
+
+### Margin Ratio
+
+Calculate your margin ratio to monitor liquidation risk:
+
+```typescript
+async function checkMarginHealth(
+  client: CompositeClient,
+  address: string,
+  subaccountNumber: number = 0
+) {
+  const account = await client.indexerClient.account.getParentSubaccount(
+    address,
+    0
+  );
+
+  const subaccount = account.subaccount.childSubaccounts.find(
+    (sub) => sub.subaccountNumber === subaccountNumber
+  );
+
+  if (!subaccount) {
+    throw new Error(`Subaccount ${subaccountNumber} not found`);
+  }
+
+  const equity = parseFloat(subaccount.equity);
+  const marginUsage = parseFloat(subaccount.marginUsage);
+  const freeCollateral = parseFloat(subaccount.freeCollateral);
+
+  // Calculate margin ratio
+  const marginRatio = equity > 0 ? (freeCollateral / equity) * 100 : 0;
+
+  // Calculate utilization
+  const utilization = equity > 0 ? (marginUsage / equity) * 100 : 0;
+
+  console.log(`Margin Health Check:`);
+  console.log(`  Equity: $${equity.toFixed(2)}`);
+  console.log(`  Free Collateral: $${freeCollateral.toFixed(2)}`);
+  console.log(`  Margin Usage: $${marginUsage.toFixed(2)}`);
+  console.log(`  Margin Ratio: ${marginRatio.toFixed(2)}%`);
+  console.log(`  Utilization: ${utilization.toFixed(2)}%`);
+
+  // Liquidation warning
+  if (marginRatio < 10) {
+    console.warn("⚠️  WARNING: High liquidation risk!");
+  } else if (marginRatio < 25) {
+    console.warn("⚠️  CAUTION: Moderate liquidation risk");
+  } else {
+    console.log("✅ Margin health is good");
+  }
+
+  return { equity, freeCollateral, marginUsage, marginRatio, utilization };
+}
+```
+
+<Warning>
+  Monitor your margin ratio regularly. If it falls below the maintenance margin
+  requirement, your position may be liquidated.
+</Warning>
+
+### Liquidation Price
+
+Estimate liquidation price for a position:
+
+```typescript
+function estimateLiquidationPrice(
+  entryPrice: number,
+  size: number,
+  side: "LONG" | "SHORT",
+  equity: number,
+  maintenanceMarginFraction: number = 0.03 // 3% maintenance margin
+): number {
+  const maintenanceMargin = entryPrice * size * maintenanceMarginFraction;
+
+  let liquidationPrice: number;
+
+  if (side === "LONG") {
+    // For longs: price drops until equity hits maintenance margin
+    liquidationPrice = entryPrice - (equity - maintenanceMargin) / size;
+  } else {
+    // For shorts: price rises until equity hits maintenance margin
+    liquidationPrice = entryPrice + (equity - maintenanceMargin) / size;
+  }
+
+  console.log(`Liquidation Price: $${liquidationPrice.toFixed(2)}`);
+  console.log(
+    `Distance: ${Math.abs((liquidationPrice / entryPrice - 1) * 100).toFixed(
+      2
+    )}%`
+  );
+
+  return liquidationPrice;
+}
+
+// Usage
+const liqPrice = estimateLiquidationPrice(
+  3800, // Entry price
+  1.0, // Size (1 ETH)
+  "LONG", // Side
+  4000, // Current equity
+  0.03 // 3% maintenance margin
+);
+```
+
+## Source Account Balances
+
+Query wallet balances outside of subaccounts:
+
+```typescript
+async function getSourceBalances(client: CompositeClient, address: string) {
+  const balances = await client.validatorClient.get.getAccountBalances(address);
+
+  console.log("Source Account Balances:");
+  balances.forEach((balance) => {
+    console.log(`  ${balance.denom}: ${balance.amount}`);
+
+    // Convert USDC to human-readable format
+    if (balance.denom.includes("usdc") || balance.denom.includes("USDC")) {
+      const usdcAmount = parseInt(balance.amount) / 1_000_000; // 6 decimals
+      console.log(`    (${usdcAmount.toFixed(2)} USDC)`);
+    }
+  });
+
+  return balances;
+}
+```
+
+<Note>
+  Source balances are in the main wallet and not available for trading until
+  deposited to a subaccount.
+</Note>
+
+## Portfolio Analytics
+
+### Portfolio Summary
+
+Create a comprehensive portfolio summary:
+
+```typescript
+async function getPortfolioSummary(client: CompositeClient, address: string) {
+  const account = await client.indexerClient.account.getParentSubaccount(
+    address,
+    0
+  );
+
+  let totalEquity = 0;
+  let totalFreeCollateral = 0;
+  let totalMarginUsage = 0;
+  let totalPositions = 0;
+  let totalUnrealizedPnL = 0;
+
+  for (const subaccount of account.subaccount.childSubaccounts) {
+    totalEquity += parseFloat(subaccount.equity || "0");
+    totalFreeCollateral += parseFloat(subaccount.freeCollateral || "0");
+    totalMarginUsage += parseFloat(subaccount.marginUsage || "0");
+
+    const positions = subaccount.openPerpetualPositions || {};
+    totalPositions += Object.keys(positions).length;
+
+    for (const position of Object.values(positions)) {
+      totalUnrealizedPnL += parseFloat((position as any).unrealizedPnl || "0");
+    }
+  }
+
+  const portfolio = {
+    totalEquity,
+    totalFreeCollateral,
+    totalMarginUsage,
+    totalPositions,
+    totalUnrealizedPnL,
+    utilizationRate: (totalMarginUsage / totalEquity) * 100,
+    roi: (totalUnrealizedPnL / (totalEquity - totalUnrealizedPnL)) * 100,
+  };
+
+  console.log("Portfolio Summary:");
+  console.log(`  Total Equity: $${portfolio.totalEquity.toFixed(2)}`);
+  console.log(
+    `  Free Collateral: $${portfolio.totalFreeCollateral.toFixed(2)}`
+  );
+  console.log(`  Margin Usage: $${portfolio.totalMarginUsage.toFixed(2)}`);
+  console.log(`  Open Positions: ${portfolio.totalPositions}`);
+  console.log(`  Unrealized PnL: $${portfolio.totalUnrealizedPnL.toFixed(2)}`);
+  console.log(`  Utilization: ${portfolio.utilizationRate.toFixed(2)}%`);
+  console.log(`  ROI: ${portfolio.roi.toFixed(2)}%`);
+
+  return portfolio;
+}
+```
+
+### Position Breakdown by Market
+
+```typescript
+async function getPositionBreakdown(client: CompositeClient, address: string) {
+  const positions = await getOpenPositions(client, address, 0);
+  const markets = await client.indexerClient.markets.getPerpetualMarkets();
+
+  const breakdown = positions.map((pos) => {
+    const market = markets.markets[pos.market];
+    const currentPrice = parseFloat(market.oraclePrice);
+    const notionalValue = pos.size * currentPrice;
+
+    return {
+      ...pos,
+      currentPrice,
+      notionalValue,
+      pnlPercent: (pos.unrealizedPnl / (pos.entryPrice * pos.size)) * 100,
+    };
+  });
+
+  // Sort by notional value
+  breakdown.sort((a, b) => b.notionalValue - a.notionalValue);
+
+  console.log("\nPosition Breakdown:");
+  breakdown.forEach((pos) => {
+    console.log(`\n${pos.market}:`);
+    console.log(`  Size: ${pos.size} ${pos.side}`);
+    console.log(`  Entry: $${pos.entryPrice.toFixed(2)}`);
+    console.log(`  Current: $${pos.currentPrice.toFixed(2)}`);
+    console.log(`  Notional: $${pos.notionalValue.toFixed(2)}`);
+    console.log(
+      `  PnL: $${pos.unrealizedPnl.toFixed(2)} (${pos.pnlPercent.toFixed(2)}%)`
+    );
+  });
+
+  return breakdown;
+}
+```
+
+## Real-time Balance Monitoring
+
+### Polling Strategy
+
+```typescript
+class BalanceMonitor {
+  private client: CompositeClient;
+  private address: string;
+  private intervalId?: NodeJS.Timeout;
+
+  constructor(client: CompositeClient, address: string) {
+    this.client = client;
+    this.address = address;
+  }
+
+  async checkBalances() {
+    const account = await this.client.indexerClient.account.getParentSubaccount(
+      this.address,
+      0
+    );
+
+    const equity = parseFloat(account.subaccount.equity);
+    const freeCollateral = parseFloat(account.subaccount.freeCollateral);
+
+    console.log(
+      `[${new Date().toISOString()}] Equity: $${equity.toFixed(
+        2
+      )}, Free: $${freeCollateral.toFixed(2)}`
+    );
+
+    // Alert if free collateral is low
+    if (freeCollateral < equity * 0.1) {
+      console.warn("⚠️  Low free collateral warning!");
+    }
+
+    return { equity, freeCollateral };
+  }
+
+  startMonitoring(intervalSeconds: number = 30) {
+    console.log(
+      `Starting balance monitoring every ${intervalSeconds} seconds...`
+    );
+
+    this.intervalId = setInterval(async () => {
+      try {
+        await this.checkBalances();
+      } catch (error) {
+        console.error("Error checking balances:", error);
+      }
+    }, intervalSeconds * 1000);
+  }
+
+  stopMonitoring() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      console.log("Balance monitoring stopped");
+    }
+  }
+}
+
+// Usage
+const monitor = new BalanceMonitor(client, wallet.address);
+monitor.startMonitoring(30); // Check every 30 seconds
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Regular Balance Checks" icon="clock">
+    Check balances before placing large orders:
+    
+    ```typescript
+    const account = await client.indexerClient.account.getParentSubaccount(
+      wallet.address,
+      0
+    );
+    const freeCollateral = parseFloat(account.subaccount.freeCollateral);
+    
+    if (freeCollateral < orderCost) {
+      throw new Error("Insufficient free collateral");
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Monitor Liquidation Risk" icon="triangle-exclamation">
+    Set up alerts for low margin ratios:
+    
+    ```typescript
+    if (marginRatio < 10) {
+      // Send alert
+      // Close positions or add collateral
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Track PnL Over Time" icon="chart-line">
+    Store balance snapshots for performance tracking:
+    
+    ```typescript
+    interface BalanceSnapshot {
+      timestamp: Date;
+      equity: number;
+      freeCollateral: number;
+      unrealizedPnL: number;
+    }
+    
+    const snapshots: BalanceSnapshot[] = [];
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Transfers"
+    icon="arrow-right-arrow-left"
+    href="/guides/transfers"
+  >
+    Deposit, withdraw, and transfer funds
+  </Card>
+  <Card title="Market Data" icon="chart-mixed" href="/guides/markets">
+    Query markets and orderbooks
+  </Card>
+  <Card
+    title="IndexerClient Reference"
+    icon="book"
+    href="/sdk-reference/indexer-client"
+  >
+    Complete Indexer API documentation
+  </Card>
+  <Card title="Types Reference" icon="code" href="/reference/types">
+    Detailed type definitions
+  </Card>
+</CardGroup>

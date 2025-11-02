@@ -1,0 +1,97 @@
+---
+title: "Order Types"
+description: "Order types and parameters for trading"
+icon: "list-check"
+---
+
+## OrderSide
+
+Direction of the order.
+
+```typescript
+import { OrderSide } from "@oraichain/lfg-client-js";
+
+OrderSide.BUY; // Buy order
+OrderSide.SELL; // Sell order
+```
+
+## OrderType
+
+Type of order to place.
+
+```typescript
+import { OrderType } from "@oraichain/lfg-client-js";
+
+OrderType.LIMIT; // Limit order
+OrderType.MARKET; // Market order
+OrderType.STOP_LIMIT; // Stop limit order
+OrderType.STOP_MARKET; // Stop market order
+```
+
+## OrderTimeInForce
+
+Time in force policy for orders.
+
+```typescript
+import { OrderTimeInForce } from "@oraichain/lfg-client-js";
+
+OrderTimeInForce.GTT; // Good-til-time
+OrderTimeInForce.IOC; // Immediate-or-cancel
+OrderTimeInForce.FOK; // Fill-or-kill
+```
+
+## OrderExecution
+
+Execution type for orders.
+
+```typescript
+import { OrderExecution } from "@oraichain/lfg-client-js";
+
+OrderExecution.DEFAULT; // Standard execution
+OrderExecution.POST_ONLY; // Must be maker
+OrderExecution.IOC; // Immediate or cancel
+```
+
+## OrderFlags
+
+Flags indicating order type.
+
+```typescript
+import { OrderFlags } from "@oraichain/lfg-client-js";
+
+OrderFlags.SHORT_TERM; // Short-term order
+OrderFlags.LONG_TERM; // Long-term order
+```
+
+## OrderStatus
+
+Status of an order.
+
+```typescript
+import { OrderStatus } from "@oraichain/lfg-client-js";
+
+OrderStatus.OPEN; // Order is open
+OrderStatus.FILLED; // Order is filled
+OrderStatus.CANCELED; // Order is canceled
+```
+
+## Order_TimeInForce
+
+Time in force for short-term orders.
+
+```typescript
+import { Order_TimeInForce } from "@oraichain/lfg-client-js";
+
+Order_TimeInForce.TIME_IN_FORCE_UNSPECIFIED; // Default
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Orders Guide" icon="chart-line" href="/guides/orders">
+    Complete orders guide
+  </Card>
+  <Card title="Enums Reference" icon="list" href="/reference/enums">
+    All SDK enums
+  </Card>
+</CardGroup>

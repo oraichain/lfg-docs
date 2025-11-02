@@ -1,0 +1,142 @@
+---
+title: "IndexerClient"
+description: "Query market data and account information"
+icon: "database"
+---
+
+## Overview
+
+The `IndexerClient` provides read-only access to market data, orderbooks, and account information through the Indexer API.
+
+Access via CompositeClient:
+
+```typescript
+const markets = await client.indexerClient.markets.getPerpetualMarkets();
+const account = await client.indexerClient.account.getParentSubaccount(
+  address,
+  0
+);
+```
+
+## Markets API
+
+### getPerpetualMarkets()
+
+Get all perpetual markets and their data.
+
+```typescript
+const response = await client.indexerClient.markets.getPerpetualMarkets();
+
+for (const [marketId, market] of Object.entries(response.markets)) {
+  console.log(`${market.ticker}: $${market.oraclePrice}`);
+}
+```
+
+**Returns**: `Promise<MarketsResponse>`
+
+### getPerpetualMarketOrderbook()
+
+Get orderbook for a specific market.
+
+```typescript
+const orderbook =
+  await client.indexerClient.markets.getPerpetualMarketOrderbook("ETH-USD");
+
+console.log("Top bid:", orderbook.bids[0].price);
+console.log("Top ask:", orderbook.asks[0].price);
+```
+
+<ParamField path="marketId" type="string" required>
+  Market identifier (e.g., "ETH-USD")
+</ParamField>
+
+**Returns**: `Promise<{ bids: OrderbookLevel[], asks: OrderbookLevel[] }>`
+
+## Account API
+
+### getParentSubaccount()
+
+Get subaccount balances and positions.
+
+```typescript
+const account = await client.indexerClient.account.getParentSubaccount(
+  wallet.address,
+  0
+);
+
+console.log("Equity:", account.subaccount.equity);
+console.log("Free Collateral:", account.subaccount.freeCollateral);
+```
+
+<ParamField path="address" type="string" required>
+  Wallet address
+</ParamField>
+
+<ParamField path="parentSubaccountNumber" type="number" required>
+  Parent subaccount number (usually 0)
+</ParamField>
+
+**Returns**: `Promise<SubaccountResponse>`
+
+### getOrder()
+
+Get details of a specific order.
+
+```typescript
+const order = await client.indexerClient.account.getOrder(orderId);
+
+console.log(`Order ${order.id}:`);
+console.log(`  Status: ${order.status}`);
+console.log(`  Price: $${order.price}`);
+console.log(`  Size: ${order.size}`);
+```
+
+<ParamField path="orderId" type="string" required>
+  Order ID to query
+</ParamField>
+
+**Returns**: `Promise<Order>`
+
+### get()
+
+Generic GET request to Indexer API.
+
+```typescript
+const orders = await client.indexerClient.account.get(
+  "/v4/orders/parentSubaccountNumber",
+  {
+    address: wallet.address,
+    parentSubaccountNumber: 0,
+    ticker: "ETH-USD",
+    returnLatestOrders: true,
+  }
+);
+```
+
+<ParamField path="path" type="string" required>
+  API endpoint path
+</ParamField>
+
+<ParamField path="params" type="object">
+  Query parameters
+</ParamField>
+
+**Returns**: `Promise<any>`
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Markets Guide" icon="chart-mixed" href="/guides/markets">
+    Query market data
+  </Card>
+  <Card title="Balances Guide" icon="scale-balanced" href="/guides/balances">
+    Monitor balances and positions
+  </Card>
+  <Card
+    title="CompositeClient"
+    icon="layer-group"
+    href="/sdk-reference/composite-client"
+  >
+    Main client interface
+  </Card>
+</CardGroup>
