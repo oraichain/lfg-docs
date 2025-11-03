@@ -659,17 +659,21 @@ async function emergencyWithdrawAll(
     ```
   </Accordion>
 
-{" "}
-<Accordion title="Use Meaningful Memos" icon="memo">
-  Add descriptive memos to track transaction purposes: ```typescript const memo
-  = `Bot #${botId} - ${strategy} - ${timestamp}`; ```
-</Accordion>
+  <Accordion title="Use Meaningful Memos" icon="memo">
+    Add descriptive memos to track transaction purposes:
+    
+    ```typescript
+    const memo = `Bot #${botId} - ${strategy} - ${timestamp}`;
+    ```
+  </Accordion>
 
-{" "}
-<Accordion title="Maintain Adequate Margin" icon="shield">
-  Never withdraw all free collateral while holding positions: ```typescript //
-  Leave 20% buffer for price movements const maxWithdraw = freeCollateral * 0.8;
-  ```
+  <Accordion title="Maintain Adequate Margin" icon="shield">
+    Never withdraw all free collateral while holding positions:
+    
+    ```typescript
+    // Leave 20% buffer for price movements
+    const maxWithdraw = freeCollateral * 0.8;
+    ```
 </Accordion>
 
   <Accordion title="Handle Network Errors" icon="wifi">

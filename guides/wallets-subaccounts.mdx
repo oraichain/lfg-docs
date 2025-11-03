@@ -327,22 +327,26 @@ async function apiKeyTrading() {
     - Hardware security modules (HSM) for production
   </Accordion>
 
-{" "}
-<Accordion title="Separate API Keys by Purpose" icon="key">
-  Create different API keys for different purposes: - **Trading Bot**: Limited
-  to order placement - **Withdrawal Key**: Separate key for withdrawals -
-  **Read-Only**: For monitoring and analytics This limits damage if a key is
-  compromised.
-</Accordion>
+  <Accordion title="Separate API Keys by Purpose" icon="key">
+    Create different API keys for different purposes:
+    - **Trading Bot**: Limited to order placement
+    - **Withdrawal Key**: Separate key for withdrawals
+    - **Read-Only**: For monitoring and analytics
+    
+    This limits damage if a key is compromised.
+  </Accordion>
 
-{" "}
-<Accordion title="Use Subaccounts for Risk Isolation" icon="shield">
-  Separate trading strategies into different subaccounts: ```typescript const
-  conservativeBot = SubaccountInfo.forLocalWallet(wallet, 0); const
-  aggressiveBot = SubaccountInfo.forLocalWallet(wallet, 1); const hedging =
-  SubaccountInfo.forLocalWallet(wallet, 2); ``` If one strategy fails, others
-  remain unaffected.
-</Accordion>
+  <Accordion title="Use Subaccounts for Risk Isolation" icon="shield">
+    Separate trading strategies into different subaccounts:
+    
+    ```typescript
+    const conservativeBot = SubaccountInfo.forLocalWallet(wallet, 0);
+    const aggressiveBot = SubaccountInfo.forLocalWallet(wallet, 1);
+    const hedging = SubaccountInfo.forLocalWallet(wallet, 2);
+    ```
+    
+    If one strategy fails, others remain unaffected.
+  </Accordion>
 
   <Accordion title="Implement Key Rotation" icon="rotate">
     Regularly rotate API keys and update your applications:

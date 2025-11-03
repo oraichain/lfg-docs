@@ -93,12 +93,18 @@ graph LR
     **Technology**: REST API + WebSocket subscriptions
   </Accordion>
 
-{" "}
-<Accordion title="Validator" icon="server">
-  **Purpose**: Blockchain interaction for transactions **Provides**: - Order
-  placement - Order cancellation - Deposits and withdrawals - Account queries -
-  Block information **Technology**: Cosmos SDK RPC endpoint
-</Accordion>
+  <Accordion title="Validator" icon="server">
+    **Purpose**: Blockchain interaction for transactions
+    
+    **Provides**:
+    - Order placement
+    - Order cancellation
+    - Deposits and withdrawals
+    - Account queries
+    - Block information
+    
+    **Technology**: Cosmos SDK RPC endpoint
+  </Accordion>
 
   <Accordion title="CompositeClient" icon="layer-group">
     **Purpose**: Unified SDK that combines both Indexer and Validator
@@ -258,18 +264,21 @@ class SimpleTradingBot {
     [Learn more →](/resources/security)
   </Accordion>
 
-{" "}
-<Accordion title="Error Handling" icon="triangle-exclamation">
-  - Implement retry logic for network failures - Handle rate limits gracefully -
-  Validate responses before processing - Log errors for debugging [Learn more
-  →](/resources/errors)
-</Accordion>
+  <Accordion title="Error Handling" icon="triangle-exclamation">
+    - Implement retry logic for network failures
+    - Handle rate limits gracefully
+    - Validate responses before processing
+    - Log errors for debugging
+    
+    [Learn more →](/resources/errors)
+  </Accordion>
 
-{" "}
-<Accordion title="Performance" icon="gauge-high">
-  - Cache account numbers for faster transactions - Use WebSocket for real-time
-  data - Batch operations when possible - Monitor API rate limits
-</Accordion>
+  <Accordion title="Performance" icon="gauge-high">
+    - Cache account numbers for faster transactions
+    - Use WebSocket for real-time data
+    - Batch operations when possible
+    - Monitor API rate limits
+  </Accordion>
 
   <Accordion title="Testing" icon="flask">
     - Always test on staging first

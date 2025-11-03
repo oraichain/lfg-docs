@@ -35,26 +35,23 @@ Perpetual futures (perps) are derivative contracts that allow you to speculate o
     - Avoiding rollover costs
   </Accordion>
 
-{" "}
+  <Accordion title="Leverage" icon="arrows-maximize">
+    Control a large position with a small amount of collateral. For example, with 10x leverage:
+    - Deposit $1,000 USDC
+    - Control a $10,000 position
+    - Amplified gains **and** losses
+    
+    <Warning>
+      Higher leverage increases liquidation risk. Always monitor your margin ratio.
+    </Warning>
+  </Accordion>
 
-<Accordion title="Leverage" icon="arrows-maximize">
-  Control a large position with a small amount of collateral. For example, with
-  10x leverage: - Deposit $1,000 USDC - Control a $10,000 position - Amplified
-  gains **and** losses
-  <Warning>
-    Higher leverage increases liquidation risk. Always monitor your margin
-    ratio.
-  </Warning>
-</Accordion>
-
-{" "}
-
-<Accordion title="Funding Rates" icon="percent">
-  Periodic payments between longs and shorts to keep perpetual prices aligned
-  with spot prices: - **Positive funding**: Longs pay shorts (bullish market) -
-  **Negative funding**: Shorts pay longs (bearish market) - **Calculated every 1
-  hour** based on price deviation
-</Accordion>
+  <Accordion title="Funding Rates" icon="percent">
+    Periodic payments between longs and shorts to keep perpetual prices aligned with spot prices:
+    - **Positive funding**: Longs pay shorts (bullish market)
+    - **Negative funding**: Shorts pay longs (bearish market)
+    - Calculated every 1 **hour** based on price deviation
+  </Accordion>
 
   <Accordion title="Collateral & Margin" icon="shield">
     Your USDC collateral secures your position:
@@ -164,18 +161,13 @@ Each market features:
     You hold your private keys. LFG Perp never has access to your funds. All operations require your signature.
   </Accordion>
 
-{" "}
+  <Accordion title="On-Chain Settlement" icon="link">
+    Every trade is settled on Oraichain. Full transparency and auditability.
+  </Accordion>
 
-<Accordion title="On-Chain Settlement" icon="link">
-  Every trade is settled on Oraichain. Full transparency and auditability.
-</Accordion>
-
-{" "}
-
-<Accordion title="Oracle Security" icon="satellite-dish">
-  Market prices are provided by decentralized oracle networks to prevent
-  manipulation.
-</Accordion>
+  <Accordion title="Oracle Security" icon="satellite-dish">
+    Market prices are provided by decentralized oracle networks to prevent manipulation.
+  </Accordion>
 
   <Accordion title="Liquidation Engine" icon="bolt">
     Automated liquidations protect the solvency of the exchange when positions become undercollateralized.

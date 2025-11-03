@@ -11,12 +11,13 @@ icon: "circle-question"
     The `@oraichain/lfg-client-js` SDK is the official TypeScript/JavaScript client for interacting with the Oraichain LFG Perpetual DEX. It provides complete access to trading, market data, and account management.
   </Accordion>
 
-{" "}
-<Accordion title="Which networks are supported?" icon="network-wired">
-  The SDK supports: - **Staging/Testnet**: For development and testing with test
-  tokens - **Mainnet**: For production trading with real assets Access via
-  `Network.staging()` and `Network.mainnet()`.
-</Accordion>
+  <Accordion title="Which networks are supported?" icon="network-wired">
+    The SDK supports:
+    - **Staging/Testnet**: For development and testing with test tokens
+    - **Mainnet**: For production trading with real assets
+    
+    Access via `Network.staging()` and `Network.mainnet()`.
+  </Accordion>
 
   <Accordion title="What are the system requirements?" icon="computer">
     - Node.js 18+ or modern browser
@@ -48,16 +49,15 @@ icon: "circle-question"
     See the [Orders Guide](/guides/orders) for details.
   </Accordion>
 
-{" "}
-<Accordion
-  title="What's the difference between short-term and long-term orders?"
-  icon="clock"
->
-  - **Short-term orders**: Expire based on block height, lower gas, faster
-  execution - **Long-term orders**: Expire based on timestamp, can stay on
-  orderbook for days Use short-term for HFT/market-making, long-term for
-  position building.
-</Accordion>
+  <Accordion
+    title="What's the difference between short-term and long-term orders?"
+    icon="clock"
+  >
+    - **Short-term orders**: Expire based on block height, lower gas, faster execution
+    - **Long-term orders**: Expire based on timestamp, can stay on orderbook for days
+    
+    Use short-term for HFT/market-making, long-term for position building.
+  </Accordion>
 
   <Accordion title="How do I cancel an order?" icon="xmark">
     Use `client.cancelOrder()` with the original client ID:
@@ -87,12 +87,18 @@ icon: "circle-question"
     You can have up to 128 subaccounts (0-127).
   </Accordion>
 
-{" "}
-<Accordion title="How do I deposit funds?" icon="arrow-down">
-  Use `client.depositToSubaccount()`: ```typescript await
-  client.depositToSubaccount( subaccount, "1000" // $1000 USDC ); ``` See the
-  [Transfers Guide](/guides/transfers) for details.
-</Accordion>
+  <Accordion title="How do I deposit funds?" icon="arrow-down">
+    Use `client.depositToSubaccount()`:
+    
+    ```typescript
+    await client.depositToSubaccount(
+      subaccount,
+      "1000" // $1000 USDC
+    );
+    ```
+    
+    See the [Transfers Guide](/guides/transfers) for details.
+  </Accordion>
 
   <Accordion title="How do I check my balance?" icon="wallet">
     Query the Indexer:
@@ -128,11 +134,9 @@ icon: "circle-question"
     ```
   </Accordion>
 
-{" "}
-<Accordion title="Can I use this in the browser?" icon="browser">
-  Yes! The SDK works in modern browsers. However, never expose private keys in
-  client-side code. Consider using a backend API for sensitive operations.
-</Accordion>
+  <Accordion title="Can I use this in the browser?" icon="browser">
+    Yes! The SDK works in modern browsers. However, never expose private keys in client-side code. Consider using a backend API for sensitive operations.
+  </Accordion>
 
   <Accordion title="How do I use API keys for trading?" icon="key">
     Create an API key wallet and use `SubaccountInfo.forPermissionedWallet()`:
@@ -163,11 +167,14 @@ icon: "circle-question"
     Check market price and orderbook depth before placing orders.
   </Accordion>
 
-{" "}
-<Accordion title="Insufficient collateral error" icon="triangle-exclamation">
-  You need more free collateral. Either: - Deposit more USDC - Close some
-  positions - Reduce order size Check: `account.subaccount.freeCollateral`
-</Accordion>
+  <Accordion title="Insufficient collateral error" icon="triangle-exclamation">
+    You need more free collateral. Either:
+    - Deposit more USDC
+    - Close some positions
+    - Reduce order size
+    
+    Check: `account.subaccount.freeCollateral`
+  </Accordion>
 
   <Accordion title="Transaction failed" icon="xmark">
     Common causes:

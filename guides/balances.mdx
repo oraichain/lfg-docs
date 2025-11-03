@@ -76,13 +76,16 @@ async function getAccountBalances(
     ```
   </Accordion>
 
-{" "}
-<Accordion title="Free Collateral" icon="hand-holding-dollar">
-  **Definition**: Available collateral that can be used to open new positions.
-  ```typescript const freeCollateral = parseFloat(subaccount.freeCollateral);
-  const maxPositionSize = freeCollateral * leverage; ```
-  <Tip>Always maintain sufficient free collateral to avoid liquidation.</Tip>
-</Accordion>
+  <Accordion title="Free Collateral" icon="hand-holding-dollar">
+    **Definition**: Available collateral that can be used to open new positions.
+    
+    ```typescript
+    const freeCollateral = parseFloat(subaccount.freeCollateral);
+    const maxPositionSize = freeCollateral * leverage;
+    ```
+    
+    <Tip>Always maintain sufficient free collateral to avoid liquidation.</Tip>
+  </Accordion>
 
   <Accordion title="Margin Usage" icon="chart-pie">
     **Definition**: Collateral currently allocated to open positions.

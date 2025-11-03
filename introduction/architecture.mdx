@@ -67,27 +67,35 @@ LFG DEX runs as an independent side chain connected to Oraichain mainnet via IBC
 
 <CardGroup cols={2}>
   <Card title="Independent Chain" icon="link">
-    **Dedicated Infrastructure** - Own validator set - Optimized for trading -
-    High throughput for orders - Custom trading modules
+    **Dedicated Infrastructure**
+    - Own validator set
+    - Optimized for trading
+    - High throughput for orders
+    - Custom trading modules
   </Card>
 
-{" "}
+  <Card title="IBC Connected" icon="bridge">
+    **Oraichain Integration**
+    - Asset transfers via IBC
+    - Oracle price feeds from mainnet
+    - Shared security guarantees
+    - Cross-chain interoperability
+  </Card>
 
-<Card title="IBC Connected" icon="bridge">
-  **Oraichain Integration** - Asset transfers via IBC - Oracle price feeds from
-  mainnet - Shared security guarantees - Cross-chain interoperability
-</Card>
-
-{" "}
-
-<Card title="Specialized Design" icon="gears">
-  **Trading Optimized** - Fast block times (~1s) - Efficient order matching -
-  Low latency execution - High transaction throughput
-</Card>
+  <Card title="Specialized Design" icon="gears">
+    **Trading Optimized**
+    - Fast block times (~1s)
+    - Efficient order matching
+    - Low latency execution
+    - High transaction throughput
+  </Card>
 
   <Card title="Cosmos SDK" icon="cube">
-    **Built on Cosmos** - Tendermint consensus - Modular architecture - Proven
-    technology - Easy upgrades
+    **Built on Cosmos**
+    - Tendermint consensus
+    - Modular architecture
+    - Proven technology
+    - Easy upgrades
   </Card>
 </CardGroup>
 
@@ -104,19 +112,21 @@ The main Oraichain blockchain that LFG DEX connects to:
     - Secure bridging
   </Card>
 
-{" "}
+  <Card title="Oracle Services" icon="satellite-dish">
+    **Price Feeds**
+    - Decentralized oracles
+    - Multiple data sources
+    - Price aggregation
+    - Real-time updates
+  </Card>
 
-<Card title="Oracle Services" icon="satellite-dish">
-  **Price Feeds** - Decentralized oracles - Multiple data sources - Price
-  aggregation - Real-time updates
-</Card>
-
-{" "}
-
-<Card title="Security" icon="shield">
-  **Shared Security** - Validator network - Staking mechanism - Slashing
-  conditions - Network protection
-</Card>
+  <Card title="Security" icon="shield">
+    **Shared Security**
+    - Validator network
+    - Staking mechanism
+    - Slashing conditions
+    - Network protection
+  </Card>
 
   <Card title="Governance" icon="gavel">
     **Chain Governance**
@@ -133,37 +143,71 @@ The core trading functionality implemented as Cosmos SDK modules on the LFG side
 
 <Tabs>
   <Tab title="Perpetuals Module">
-    Manages perpetual futures contracts and positions. **Responsibilities**: -
-    Order matching - Position management - Liquidation logic - Funding rate
-    calculations - Collateral management **Features**: - Multiple markets -
-    Cross-margin support - Risk parameters per market - Emergency shutdown
-    capability
+    Manages perpetual futures contracts and positions.
+    
+    **Responsibilities**:
+    - Order matching
+    - Position management
+    - Liquidation logic
+    - Funding rate calculations
+    - Collateral management
+    
+    **Features**:
+    - Multiple markets
+    - Cross-margin support
+    - Risk parameters per market
+    - Emergency shutdown capability
   </Tab>
 
-{" "}
+  <Tab title="Clob Module">
+    Central Limit Order Book (CLOB) for order matching.
+    
+    **Responsibilities**:
+    - Order book management
+    - Price-time priority matching
+    - Order lifecycle management
+    - Fill execution
+    - Order cancellation
+    
+    **Performance**:
+    - High-throughput matching
+    - Optimized data structures
+    - Efficient memory usage
+    - Sub-second execution
+  </Tab>
 
-<Tab title="Clob Module">
-  Central Limit Order Book (CLOB) for order matching. **Responsibilities**: -
-  Order book management - Price-time priority matching - Order lifecycle
-  management - Fill execution - Order cancellation **Performance**: -
-  High-throughput matching - Optimized data structures - Efficient memory usage
-  - Sub-second execution
-</Tab>
-
-{" "}
-
-<Tab title="Bridge Module">
-  Handles deposits and withdrawals. **Responsibilities**: - USDC deposits - Fund
-  withdrawals - Subaccount transfers - Balance tracking - Gas fee management
-  **Security**: - Atomic operations - Balance verification - Withdrawal limits -
-  Anti-spam measures
-</Tab>
+  <Tab title="Bridge Module">
+    Handles deposits and withdrawals.
+    
+    **Responsibilities**:
+    - USDC deposits
+    - Fund withdrawals
+    - Subaccount transfers
+    - Balance tracking
+    - Gas fee management
+    
+    **Security**:
+    - Atomic operations
+    - Balance verification
+    - Withdrawal limits
+    - Anti-spam measures
+  </Tab>
 
   <Tab title="Oracle Module">
-    Provides price feeds for markets. **Responsibilities**: - Price aggregation
-    - Oracle consensus - Price validation - Staleness checks - Circuit breakers
-    **Data Sources**: - Multiple oracle providers - Decentralized price feeds -
-    Redundant sources - Fallback mechanisms
+    Provides price feeds for markets.
+    
+    **Responsibilities**:
+    - Price aggregation
+    - Oracle consensus
+    - Price validation
+    - Staleness checks
+    - Circuit breakers
+    
+    **Data Sources**:
+    - Multiple oracle providers
+    - Decentralized price feeds
+    - Redundant sources
+    - Fallback mechanisms
   </Tab>
 </Tabs>
 
@@ -305,27 +349,35 @@ sequenceDiagram
 
 <CardGroup cols={2}>
   <Card title="Wallet Security" icon="wallet">
-    **User Responsibility**: - Private key management - Transaction signing -
-    API key security - Device security
+    **User Responsibility**:
+    - Private key management
+    - Transaction signing
+    - API key security
+    - Device security
   </Card>
 
-{" "}
+  <Card title="Protocol Security" icon="shield">
+    **On-Chain Protection**:
+    - Margin requirements
+    - Liquidation engine
+    - Position limits
+    - Circuit breakers
+  </Card>
 
-<Card title="Protocol Security" icon="shield">
-  **On-Chain Protection**: - Margin requirements - Liquidation engine - Position
-  limits - Circuit breakers
-</Card>
-
-{" "}
-
-<Card title="Oracle Security" icon="satellite-dish">
-  **Price Feed Protection**: - Multiple data sources - Outlier detection -
-  Staleness checks - Emergency pause
-</Card>
+  <Card title="Oracle Security" icon="satellite-dish">
+    **Price Feed Protection**:
+    - Multiple data sources
+    - Outlier detection
+    - Staleness checks
+    - Emergency pause
+  </Card>
 
   <Card title="Infrastructure Security" icon="server">
-    **Operational Security**: - DDoS protection - Rate limiting - API
-    authentication - Encrypted connections
+    **Operational Security**:
+    - DDoS protection
+    - Rate limiting
+    - API authentication
+    - Encrypted connections
   </Card>
 </CardGroup>
 
@@ -335,24 +387,33 @@ The liquidation system ensures exchange solvency:
 
 <Tabs>
   <Tab title="Monitoring">
-    **Continuous Checks**: - Every block processes margin checks - Calculates
-    maintenance margin - Identifies undercollateralized positions - Flags
-    accounts for liquidation
+    **Continuous Checks**:
+    - Every block processes margin checks
+    - Calculates maintenance margin
+    - Identifies undercollateralized positions
+    - Flags accounts for liquidation
   </Tab>
 
-{" "}
-
-<Tab title="Execution">
-  **Liquidation Process**: 1. Position marked for liquidation 2. Liquidation
-  order created 3. Position closed at market 4. Insurance fund covers losses 5.
-  Account settled **Incentives**: - Liquidators earn fee portion - Fast
-  liquidation preferred - Insurance fund protects solvency
-</Tab>
+  <Tab title="Execution">
+    **Liquidation Process**:
+    1. Position marked for liquidation
+    2. Liquidation order created
+    3. Position closed at market
+    4. Insurance fund covers losses
+    5. Account settled
+    
+    **Incentives**:
+    - Liquidators earn fee portion
+    - Fast liquidation preferred
+    - Insurance fund protects solvency
+  </Tab>
 
   <Tab title="Protection">
-    **User Protection**: - Margin warnings before liquidation - Partial
-    liquidations when possible - Transparent liquidation prices - Fair
-    liquidation process
+    **User Protection**:
+    - Margin warnings before liquidation
+    - Partial liquidations when possible
+    - Transparent liquidation prices
+    - Fair liquidation process
   </Tab>
 </Tabs>
 
@@ -387,9 +448,7 @@ The liquidation system ensures exchange solvency:
     Potential rollup integration for even higher throughput while maintaining security.
   </Accordion>
 
-{" "}
-
-<Accordion title="Sharding" icon="grip-vertical">
+  <Accordion title="Sharding" icon="grip-vertical">
   Market-specific sharding to distribute load across validator set.
 </Accordion>
 
@@ -440,23 +499,45 @@ The liquidation system ensures exchange solvency:
 
 <Tabs>
   <Tab title="Validators">
-    **Validator Network**: - Geographic distribution - Redundant infrastructure
-    - Load balancing - Failover capability **Responsibilities**: - Block
-    production - Transaction validation - State consensus - Network security
+    **Validator Network**:
+    - Geographic distribution
+    - Redundant infrastructure
+    - Load balancing
+    - Failover capability
+    
+    **Responsibilities**:
+    - Block production
+    - Transaction validation
+    - State consensus
+    - Network security
   </Tab>
 
-{" "}
-
-<Tab title="RPC Nodes">
-  **Public RPC Endpoints**: - Transaction submission - State queries - Event
-  subscriptions - Block data access **Infrastructure**: - Multiple regions -
-  Auto-scaling - DDoS protection - High availability
-</Tab>
+  <Tab title="RPC Nodes">
+    **Public RPC Endpoints**:
+    - Transaction submission
+    - State queries
+    - Event subscriptions
+    - Block data access
+    
+    **Infrastructure**:
+    - Multiple regions
+    - Auto-scaling
+    - DDoS protection
+    - High availability
+  </Tab>
 
   <Tab title="Indexer Nodes">
-    **Indexer Infrastructure**: - Database replicas - Cache clusters - API load
-    balancers - WebSocket servers **Distribution**: - Multi-region deployment -
-    CDN for static content - Edge caching - Geographic routing
+    **Indexer Infrastructure**:
+    - Database replicas
+    - Cache clusters
+    - API load balancers
+    - WebSocket servers
+    
+    **Distribution**:
+    - Multi-region deployment
+    - CDN for static content
+    - Edge caching
+    - Geographic routing
   </Tab>
 </Tabs>
 
@@ -464,25 +545,31 @@ The liquidation system ensures exchange solvency:
 
 <CardGroup cols={2}>
   <Card title="Blockchain Metrics" icon="chart-line">
-    - Block time - Transaction throughput - Validator health - Network latency
+    - Block time
+    - Transaction throughput
+    - Validator health
+    - Network latency
   </Card>
 
-{" "}
+  <Card title="Application Metrics" icon="chart-mixed">
+    - API response times
+    - Order placement rate
+    - Liquidation events
+    - Funding rate history
+  </Card>
 
-<Card title="Application Metrics" icon="chart-mixed">
-  - API response times - Order placement rate - Liquidation events - Funding
-  rate history
-</Card>
-
-{" "}
-
-<Card title="System Health" icon="heart-pulse">
-  - CPU and memory usage - Database performance - Cache hit rates - Connection
-  pools
-</Card>
+  <Card title="System Health" icon="heart-pulse">
+    - CPU and memory usage
+    - Database performance
+    - Cache hit rates
+    - Connection pools
+  </Card>
 
   <Card title="User Activity" icon="users">
-    - Active traders - Order volume - Position sizes - Unique addresses
+    - Active traders
+    - Order volume
+    - Position sizes
+    - Unique addresses
   </Card>
 </CardGroup>
 
