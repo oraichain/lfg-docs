@@ -14,14 +14,14 @@
   "theme": "quill",
   "anchors": [
     {
-      "name": "GitHub",
-      "icon": "github",
-      "url": "https://github.com/oraichain/lfg-client-js"
+      "name": "Website",
+      "icon": "globe",
+      "url": "https://lfg.land"
     },
     {
       "name": "Community",
-      "icon": "discord",
-      "url": "https://discord.gg/oraichain"
+      "icon": "telegram",
+      "url": "https://t.me/lfg_land"
     }
   ],
   "navigation": [
@@ -81,20 +81,14 @@
       ]
     }
   ],
-  "topbarLinks": [
-    {
-      "name": "GitHub",
-      "url": "https://github.com/oraichain/lfg-client-js"
-    }
-  ],
+  "topbarLinks": [],
   "topbarCtaButton": {
     "name": "Launch App",
     "url": "https://lfg.land"
   },
   "footerSocials": {
-    "x": "https://x.com/oraichain",
-    "github": "https://github.com/oraichain",
-    "discord": "https://discord.gg/oraichain",
-    "website": "https://orai.io"
+    "x": "https://x.com/lfg_land",
+    "website": "https://lfg.land",
+    "telegram": "https://t.me/lfg_land"
   }
 }
